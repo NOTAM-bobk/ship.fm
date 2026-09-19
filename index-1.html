@@ -1,0 +1,1099 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>snip.fm: 30-second music clips</title>
+<meta name="description" content="Scroll through 30-second music clips. Heart what you love and save it for later.">
+<meta name="theme-color" content="#ffffff" id="themeColor">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23000'/%3E%3Cg fill='%23fff'%3E%3Crect x='4.75' y='9' width='2.5' height='6' rx='1'/%3E%3Crect x='8.75' y='6' width='2.5' height='12' rx='1'/%3E%3Crect x='12.75' y='7.5' width='2.5' height='9' rx='1'/%3E%3Crect x='16.75' y='9.5' width='2.5' height='5' rx='1'/%3E%3C/g%3E%3C/svg%3E">
+
+<!-- Apply the saved theme before first paint so there is no flash -->
+<script>
+(function () {
+  try {
+    var saved = JSON.parse(localStorage.getItem('snip:theme'));
+    var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.classList.toggle('dark', dark);
+  } catch (e) {}
+})();
+</script>
+
+<!-- Tailwind Play CDN: fine for a static demo. For heavy production traffic, swap for the Tailwind CLI build. -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: 'var(--bg)',
+          fg: 'var(--fg)',
+          muted: 'var(--muted)',
+          line: 'var(--line)',
+          surface: 'var(--surface)',
+          surface2: 'var(--surface-2)',
+          accent: 'var(--accent)'
+        }
+      }
+    }
+  };
+</script>
+
+<style>
+  /* ---------- Tokens: monochrome plus one accent ---------- */
+  :root {
+    --bg: #ffffff; --fg: #0a0a0a; --muted: #52525b; --line: #e4e4e7;
+    --surface: #fafafa; --surface-2: #f4f4f5;
+    --accent: #c6002b; --on-accent: #ffffff;
+    color-scheme: light;
+  }
+  .dark {
+    --bg: #000000; --fg: #ededed; --muted: #a1a1aa; --line: #27272a;
+    --surface: #0a0a0a; --surface-2: #18181b;
+    --accent: #ff3b5c; --on-accent: #000000;
+    color-scheme: dark;
+  }
+
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg); color: var(--fg);
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-variant-numeric: tabular-nums; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+  :focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+  .no-sb { scrollbar-width: none; }
+  .no-sb::-webkit-scrollbar { display: none; }
+
+  /* ---------- Shared controls ---------- */
+  .icon-btn {
+    display: inline-grid; place-items: center; width: 44px; height: 44px;
+    border-radius: 6px; color: var(--muted); transition: color .12s, background .12s;
+  }
+  .icon-btn:hover { color: var(--fg); background: var(--surface-2); }
+  .icon-btn:active { transform: scale(.96); }
+  .fab {
+    display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--fg);
+    box-shadow: 0 2px 8px rgba(0,0,0,.08); transition: background .12s, opacity .12s;
+  }
+  .fab:hover { background: var(--surface-2); }
+  .fab:disabled { opacity: .35; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; padding: 0 16px; border: 1px solid var(--line); border-radius: 6px;
+    background: var(--bg); color: var(--fg); font-size: 14px; font-weight: 500;
+    transition: background .12s, border-color .12s, transform .06s;
+  }
+  .btn:hover { background: var(--surface-2); border-color: var(--muted); }
+  .btn:active { transform: scale(.98); }
+  .btn-primary {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 48px; padding: 0 28px; border-radius: 6px; border: 0;
+    background: var(--accent); color: var(--on-accent); font-size: 15px; font-weight: 600;
+    transition: filter .12s, transform .06s;
+  }
+  .btn-primary:hover:not(:disabled) { filter: brightness(.92); }
+  .btn-primary:active:not(:disabled) { transform: scale(.98); }
+  .btn-primary:disabled { opacity: .5; }
+  .count-pill {
+    display: inline-block; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 4px;
+    line-height: 16px; text-align: center; font-size: 11px; vertical-align: middle;
+    border: 1px solid var(--line); border-radius: 9px; color: var(--muted);
+  }
+  .count-pill:empty { display: none; }
+  .kbd {
+    font: 500 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px;
+    padding: 1px 6px; background: var(--surface);
+  }
+
+  /* ---------- Header + nav ---------- */
+  .navtab {
+    position: relative; height: 56px; padding: 0 12px; font-size: 14px; color: var(--muted);
+    transition: color .12s;
+  }
+  .navtab:hover { color: var(--fg); }
+  .navtab[aria-current="page"] { color: var(--fg); font-weight: 500; }
+  .navtab[aria-current="page"]::after {
+    content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; background: var(--fg);
+  }
+  .bnav {
+    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; min-height: 56px; font-size: 12px; color: var(--muted);
+  }
+  .bnav[aria-current="page"] { color: var(--fg); font-weight: 500; }
+  .bnav[aria-current="page"]::before {
+    content: ""; position: absolute; top: -1px; left: 30%; right: 30%; height: 2px; background: var(--fg);
+  }
+
+  /* ---------- Stations ---------- */
+  .chip {
+    position: relative; flex: none; height: 36px; padding: 0 14px; border: 1px solid var(--line);
+    border-radius: 6px; background: var(--bg); color: var(--muted); font-size: 14px; font-weight: 500;
+    transition: color .12s, border-color .12s, background .12s;
+  }
+  .chip::before { content: ""; position: absolute; inset: -4px 0; } /* 44px touch target */
+  .chip:hover { color: var(--fg); border-color: var(--muted); }
+  .chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+
+  /* ---------- Feed ---------- */
+  #feed {
+    position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain;
+    scroll-snap-type: y mandatory; scrollbar-width: none;
+  }
+  #feed::-webkit-scrollbar { display: none; }
+  .slide { height: 100%; display: flex; justify-content: center; scroll-snap-align: start; scroll-snap-stop: always; }
+  .slide-in {
+    position: relative; display: flex; flex-direction: column; gap: 16px;
+    width: 100%; max-width: 440px; height: 100%; padding: 16px 16px 20px;
+  }
+  @media (min-width: 768px) { .slide-in { max-width: 480px; border-inline: 1px solid var(--line); } }
+  .slide-in.msg { align-items: center; justify-content: center; text-align: center; gap: 12px; }
+
+  .art-box { flex: 1 1 0; min-height: 0; display: flex; align-items: center; justify-content: center; container-type: size; }
+  .art {
+    position: relative; display: block; padding: 0; overflow: hidden;
+    width: min(100%, 50dvh); aspect-ratio: 1;
+    border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2);
+    transition: transform .12s;
+  }
+  @supports (width: 1cqw) { .art { width: min(100cqw, 100cqh); height: min(100cqw, 100cqh); aspect-ratio: auto; } }
+  button.art:active { transform: scale(.995); }
+  .art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; user-select: none; -webkit-user-drag: none; }
+  .art img.broken, .tile-art img.broken { visibility: hidden; }
+
+  .station-tag {
+    position: absolute; left: 12px; top: 12px; padding: 4px 8px; border-radius: 6px;
+    background: var(--bg); border: 1px solid var(--line); color: var(--fg); font-size: 12px; font-weight: 500;
+  }
+  .eq {
+    position: absolute; left: 12px; bottom: 12px; display: none; align-items: flex-end; gap: 2px;
+    height: 28px; padding: 6px 8px; border-radius: 6px; background: var(--fg); box-sizing: border-box;
+  }
+  .eq i { display: block; width: 3px; height: 30%; border-radius: 1px; background: var(--bg); animation: eq .9s ease-in-out infinite; }
+  .eq i:nth-child(2) { animation-duration: .7s; animation-delay: -.3s; }
+  .eq i:nth-child(3) { animation-duration: 1.1s; animation-delay: -.6s; }
+  .eq i:nth-child(4) { animation-duration: .8s; animation-delay: -.1s; }
+  .slide.is-playing .eq, .tile.is-playing .eq { display: flex; }
+  .tile .eq { left: 8px; top: 8px; bottom: auto; }
+
+  .paused-badge {
+    position: absolute; inset: 0; margin: auto; width: 72px; height: 72px; border-radius: 999px;
+    display: grid; place-items: center; background: var(--fg); color: var(--bg);
+    opacity: 0; transform: scale(.8); transition: opacity .15s, transform .15s; pointer-events: none;
+  }
+  .slide.user-paused .paused-badge { opacity: 1; transform: none; }
+
+  .burst { position: absolute; z-index: 5; pointer-events: none; color: var(--accent); animation: burst .75s ease-out forwards; }
+
+  .meta { display: flex; align-items: center; gap: 10px; }
+  .meta > div { min-width: 0; flex: 1; }
+  .title { font-size: 20px; font-weight: 600; letter-spacing: -.02em; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .artist { margin-top: 2px; font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tag-e { flex: none; font: 600 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 2px 5px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); }
+
+  /* The 30-second clip: one tick per second */
+  .clip { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+  .clip .t { width: 32px; }
+  .clip .t.end { text-align: right; }
+  .ticks { flex: 1; display: flex; align-items: center; gap: 3px; height: 44px; cursor: pointer; touch-action: pan-y; }
+  .ticks i { flex: 1; height: 14px; border-radius: 1px; background: var(--line); transition: background .12s; }
+  .ticks i.on { background: var(--fg); }
+  .ticks i.cur { background: var(--accent); height: 24px; }
+  .ticks:hover i:not(.on):not(.cur) { background: var(--muted); opacity: .5; }
+
+  .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .act {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 48px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg);
+    font-size: 14px; font-weight: 500; transition: background .12s, border-color .12s, color .12s, transform .06s;
+  }
+  .act:hover { background: var(--surface-2); border-color: var(--muted); }
+  .act:active { transform: scale(.97); }
+  .act.like.on { color: var(--accent); }
+  .act.like.on svg { fill: currentColor; }
+  .act.save.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .act svg.pop { animation: pop .35s ease-out; }
+
+  .hint {
+    position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 12px; color: var(--muted);
+    animation: bob 1.8s ease-in-out infinite; pointer-events: none;
+  }
+  #feed.moved .hint { display: none; }
+
+  .sk { background: var(--surface-2); border-radius: 6px; animation: pulse 1.4s ease-in-out infinite; }
+  .art.sk { border-radius: 12px; }
+  .ring { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); }
+
+  /* ---------- Saved grid ---------- */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+  .tab { position: relative; min-height: 44px; padding: 0 12px; font-size: 14px; color: var(--muted); }
+  .tab:hover { color: var(--fg); }
+  .tab[aria-selected="true"] { color: var(--fg); font-weight: 500; }
+  .tab[aria-selected="true"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; background: var(--fg); }
+  .tile-art {
+    position: relative; display: block; width: 100%; aspect-ratio: 1; padding: 0; overflow: hidden;
+    border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2);
+    transition: border-color .12s, transform .06s;
+  }
+  .tile-art:hover { border-color: var(--muted); }
+  .tile-art:active { transform: scale(.98); }
+  .tile-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .tile-play {
+    position: absolute; right: 8px; bottom: 8px; width: 36px; height: 36px; border-radius: 999px;
+    display: grid; place-items: center; background: var(--fg); color: var(--bg);
+  }
+  .tile .ic-pause { display: none; }
+  .tile.is-playing .ic-pause { display: block; }
+  .tile.is-playing .ic-play { display: none; }
+  .tile-prog { position: absolute; left: 0; bottom: 0; height: 3px; width: var(--pct, 0%); background: var(--accent); opacity: 0; }
+  .tile.is-playing .tile-prog { opacity: 1; }
+
+  /* ---------- Dialogs + toasts ---------- */
+  dialog {
+    padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--fg);
+    width: min(420px, calc(100vw - 32px)); max-height: 88dvh; overflow-y: auto;
+    box-shadow: 0 16px 48px rgba(0,0,0,.28);
+  }
+  dialog::backdrop { background: rgba(0,0,0,.55); }
+  dialog[open] { animation: sheetIn .18s ease-out; }
+  @media (max-width: 639px) {
+    dialog { margin: auto 0 0 0; width: 100%; max-width: 100%; border-radius: 16px 16px 0 0; border-bottom: 0; padding-bottom: env(safe-area-inset-bottom); }
+  }
+  .target { display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 44px; padding: 8px 0; border-radius: 6px; font-size: 12px; color: var(--muted); }
+  .target:hover { color: var(--fg); background: var(--surface-2); }
+  .target-ic { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--line); color: var(--fg); }
+
+  #toasts {
+    position: fixed; z-index: 60; display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+    left: 50%; transform: translateX(-50%); bottom: calc(72px + env(safe-area-inset-bottom)); width: max-content; max-width: calc(100vw - 32px);
+  }
+  @media (min-width: 768px) { #toasts { left: auto; right: 24px; transform: none; bottom: 24px; } }
+  .toast {
+    background: var(--fg); color: var(--bg); padding: 12px 16px; border-radius: 6px; font-size: 14px; font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,.22); animation: toastIn .18s ease-out;
+  }
+  .toast.out { opacity: 0; transition: opacity .2s; }
+
+  /* ---------- Motion ---------- */
+  @keyframes eq { 0%, 100% { height: 25%; } 50% { height: 100%; } }
+  @keyframes pulse { 50% { opacity: .5; } }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.4); } 100% { transform: scale(1); } }
+  @keyframes burst {
+    0% { transform: translate(-50%, -50%) scale(.3); opacity: 0; }
+    25% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+    100% { transform: translate(-50%, -85%) scale(1); opacity: 0; }
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes sheetIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  }
+</style>
+</head>
+
+<body class="bg-bg text-fg antialiased">
+<noscript><p style="padding:24px">snip.fm needs JavaScript to play clips.</p></noscript>
+
+<div id="app" class="flex h-[100dvh] flex-col overflow-hidden">
+
+  <!-- Header -->
+  <header class="shrink-0 border-b border-line bg-bg" style="padding-top:env(safe-area-inset-top)">
+    <div class="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-4 sm:px-6">
+      <button data-nav="feed" class="flex min-h-[44px] items-center gap-2 rounded-md pr-2" aria-label="snip.fm, go to feed">
+        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+          <rect width="24" height="24" rx="6" fill="currentColor"/>
+          <g fill="var(--bg)">
+            <rect x="4.75" y="9" width="2.5" height="6" rx="1"/><rect x="8.75" y="6" width="2.5" height="12" rx="1"/>
+            <rect x="12.75" y="7.5" width="2.5" height="9" rx="1"/><rect x="16.75" y="9.5" width="2.5" height="5" rx="1"/>
+          </g>
+        </svg>
+        <span class="text-[15px] font-semibold tracking-tight">snip<span class="text-muted">.fm</span></span>
+      </button>
+      <nav class="ml-4 hidden items-center md:flex" aria-label="Primary">
+        <button class="navtab" data-nav="feed" aria-current="page">Feed</button>
+        <button class="navtab" data-nav="saved">Saved<span class="count-pill mono" data-saved-count></span></button>
+      </nav>
+      <div class="ml-auto flex items-center">
+        <button id="muteBtn" class="icon-btn" aria-label="Mute"></button>
+        <button id="themeBtn" class="icon-btn" aria-label="Switch theme"></button>
+        <button id="aboutBtn" class="icon-btn" aria-label="About snip.fm" data-i="info"></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Views -->
+  <main class="relative min-h-0 flex-1">
+
+    <!-- Feed view -->
+    <section id="viewFeed" class="absolute inset-0 flex flex-col" aria-label="Feed">
+      <div class="shrink-0 border-b border-line">
+        <div id="stations" class="no-sb mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-2 sm:px-6" role="group" aria-label="Stations"></div>
+      </div>
+      <div class="relative min-h-0 flex-1">
+        <div id="feed" aria-label="Music clips"></div>
+
+        <div class="pointer-events-none absolute right-6 top-1/2 z-10 hidden -translate-y-1/2 flex-col gap-3 md:flex">
+          <button id="prevBtn" class="fab pointer-events-auto" aria-label="Previous clip" data-i="chevronUp"></button>
+          <button id="nextBtn" class="fab pointer-events-auto" aria-label="Next clip" data-i="chevronDown"></button>
+        </div>
+
+        <!-- Start screen: browsers only allow sound after a tap -->
+        <div id="start" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-bg px-6 text-center">
+          <div class="flex max-w-sm flex-col items-center">
+            <svg width="48" height="48" viewBox="0 0 24 24" aria-hidden="true">
+              <rect width="24" height="24" rx="6" fill="currentColor"/>
+              <g fill="var(--bg)">
+                <rect x="4.75" y="9" width="2.5" height="6" rx="1"/><rect x="8.75" y="6" width="2.5" height="12" rx="1"/>
+                <rect x="12.75" y="7.5" width="2.5" height="9" rx="1"/><rect x="16.75" y="9.5" width="2.5" height="5" rx="1"/>
+              </g>
+            </svg>
+            <h1 class="mt-6 text-3xl font-semibold tracking-tight">Thirty seconds. One song. Next.</h1>
+            <p id="startCopy" class="mt-3 text-[15px] leading-relaxed text-muted"></p>
+            <button id="startBtn" class="btn-primary mt-8" disabled>Tuning in…</button>
+            <p class="mt-4 text-sm text-muted">Sound on. Headphones recommended.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Saved view -->
+    <section id="viewSaved" class="absolute inset-0 overflow-y-auto" aria-label="Saved" hidden>
+      <div class="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
+        <div class="flex items-center gap-4">
+          <div class="ring !h-14 !w-14" data-i="music" data-s="24"></div>
+          <div class="min-w-0">
+            <h1 class="text-xl font-semibold tracking-tight">Your library</h1>
+            <p class="text-sm text-muted">Everything you saved or hearted, newest first.</p>
+          </div>
+        </div>
+        <div class="tabs mt-6" role="tablist" aria-label="Library">
+          <button class="tab" role="tab" data-tab="saved" aria-selected="true">Saved <span class="count-pill mono">0</span></button>
+          <button class="tab" role="tab" data-tab="liked" aria-selected="false">Liked <span class="count-pill mono">0</span></button>
+        </div>
+        <div id="savedGrid" class="mt-6"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom nav (mobile) -->
+  <nav class="grid shrink-0 grid-cols-2 border-t border-line bg-bg md:hidden" style="padding-bottom:env(safe-area-inset-bottom)" aria-label="Primary">
+    <button class="bnav" data-nav="feed" aria-current="page"><span data-i="radio"></span><span>Feed</span></button>
+    <button class="bnav" data-nav="saved"><span data-i="bookmark"></span><span>Saved<span class="count-pill mono" data-saved-count></span></span></button>
+  </nav>
+</div>
+
+<!-- Share sheet (demo) -->
+<dialog id="shareDlg" aria-labelledby="shareHeading">
+  <div class="p-5">
+    <div class="flex items-center justify-between">
+      <h2 id="shareHeading" class="text-base font-semibold tracking-tight">Share this clip</h2>
+      <button class="icon-btn -mr-2" data-close aria-label="Close" data-i="x"></button>
+    </div>
+    <div class="mt-4 flex items-center gap-3 rounded-lg border border-line p-3">
+      <img id="shareArt" class="h-12 w-12 rounded-md border border-line object-cover" alt="">
+      <div class="min-w-0">
+        <p id="shareTitle" class="truncate text-sm font-medium"></p>
+        <p id="shareArtist" class="truncate text-sm text-muted"></p>
+      </div>
+    </div>
+    <div class="mt-4 grid grid-cols-4 gap-2">
+      <button class="target" data-share="Messages"><span class="target-ic" data-i="messageCircle"></span>Messages</button>
+      <button class="target" data-share="Story"><span class="target-ic" data-i="camera"></span>Story</button>
+      <button class="target" data-share="Email"><span class="target-ic" data-i="mail"></span>Email</button>
+      <button class="target" data-share="More"><span class="target-ic" data-i="more"></span>More</button>
+    </div>
+    <div class="mt-4 flex gap-2">
+      <input id="shareLink" readonly aria-label="Clip link" class="mono min-w-0 flex-1 rounded-md border border-line bg-surface px-3 text-base" style="min-height:44px">
+      <button id="copyBtn" class="btn">Copy</button>
+    </div>
+    <p class="mt-3 text-xs text-muted">Demo only. Nothing is sent anywhere.</p>
+  </div>
+</dialog>
+
+<!-- About -->
+<dialog id="aboutDlg" aria-labelledby="aboutHeading">
+  <div class="p-5">
+    <div class="flex items-center justify-between">
+      <h2 id="aboutHeading" class="text-base font-semibold tracking-tight">About snip.fm</h2>
+      <button class="icon-btn -mr-2" data-close aria-label="Close" data-i="x"></button>
+    </div>
+    <p class="mt-3 text-sm leading-relaxed text-muted">A tiny music discovery feed. Scroll, hear 30 seconds, heart or save what sticks.</p>
+    <h3 class="mt-5 text-sm font-medium">Where the clips come from</h3>
+    <p class="mt-1 text-sm leading-relaxed text-muted">This build plays 30-second previews and artwork from Apple's iTunes Search API, so it runs with no keys. The iHeartRadio source is a drop-in provider in the code.</p>
+    <h3 class="mt-5 text-sm font-medium">Keyboard</h3>
+    <ul class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted">
+      <li><span class="kbd">J</span> <span class="kbd">↓</span> next</li>
+      <li><span class="kbd">K</span> <span class="kbd">↑</span> previous</li>
+      <li><span class="kbd">Space</span> play or pause</li>
+      <li><span class="kbd">M</span> mute</li>
+      <li><span class="kbd">L</span> like</li>
+      <li><span class="kbd">S</span> save</li>
+    </ul>
+    <p class="mt-5 text-xs leading-relaxed text-muted">Likes and saves stay in this browser. Like counts and sharing are demo only.</p>
+  </div>
+</dialog>
+
+<div id="toasts" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* =====================================================================
+   Helpers
+   ===================================================================== */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const fmt = n => n >= 10000 ? Math.round(n / 1000) + 'k' : n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(n);
+const fmtTime = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+const baseLikes = id => { let h = 2166136261; for (const ch of String(id)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return 300 + (h % 42000); }; // demo counts
+
+const store = {
+  mem: {},
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return k in this.mem ? this.mem[k] : d; } },
+  set(k, v) { this.mem[k] = v; try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+
+/* Lucide-style icons */
+const I = {
+  heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+  bookmark: '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>',
+  share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/>',
+  play: '<polygon points="6 3 20 12 6 21 6 3"/>',
+  pause: '<rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/>',
+  volume2: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>',
+  volumeX: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  chevronUp: '<path d="m18 15-6-6-6 6"/>',
+  chevronDown: '<path d="m6 9 6 6 6-6"/>',
+  x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  radio: '<path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/>',
+  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  messageCircle: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+  mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+  more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>'
+};
+const icon = (n, { fill = false, size = 20, cls = '' } = {}) =>
+  `<svg class="${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="${fill ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
+
+/* =====================================================================
+   Clip sources ("providers")
+   Every provider returns clips shaped like:
+   { id, title, artist, album, art, audio, genre, explicit }
+   ===================================================================== */
+function jsonp(url) {
+  return new Promise((resolve, reject) => {
+    const cb = '__snip_' + Math.random().toString(36).slice(2);
+    const s = document.createElement('script');
+    const done = () => { clearTimeout(timer); delete window[cb]; s.remove(); };
+    const timer = setTimeout(() => { done(); reject(new Error('timeout')); }, 8000);
+    window[cb] = d => { done(); resolve(d); };
+    s.onerror = () => { done(); reject(new Error('network')); };
+    s.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;
+    document.head.appendChild(s);
+  });
+}
+async function getJSON(url) {
+  try { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return await r.json(); }
+  catch { return jsonp(url); }
+}
+
+const normalizeItunes = r => ({
+  id: String(r.trackId),
+  title: r.trackName,
+  artist: r.artistName,
+  album: r.collectionName || r.trackName,
+  art: (r.artworkUrl100 || '').replace('100x100bb', '600x600bb'),
+  audio: r.previewUrl,
+  genre: r.primaryGenreName,
+  explicit: r.trackExplicitness === 'explicit'
+});
+
+const PROVIDERS = {
+  /* Works today: real 30-second previews, no API key. */
+  itunes: {
+    async search(term, { offset = 0, limit = 10 } = {}) {
+      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&entity=song&country=US&limit=${limit}&offset=${offset}`;
+      const data = await getJSON(url);
+      return (data.results || []).filter(r => r.previewUrl && r.trackId).map(normalizeItunes);
+    },
+    async lookup(id) {
+      const data = await getJSON(`https://itunes.apple.com/lookup?id=${encodeURIComponent(id)}`);
+      const r = (data.results || [])[0];
+      return r && r.previewUrl ? normalizeItunes(r) : null;
+    }
+  },
+
+  /* Plug iHeartRadio in here once you have access to a clip source.
+     Keep credentials off the client: add a Vercel Serverless Function
+     (for example /api/clips) that calls iHeartRadio, then fetch it here
+     and return clips in the shape above.
+
+     iheart: {
+       async search(term, { offset = 0, limit = 10 } = {}) {
+         const res = await fetch(`/api/clips?q=${encodeURIComponent(term)}&offset=${offset}&limit=${limit}`);
+         return (await res.json()).clips;
+       },
+       async lookup(id) { const res = await fetch(`/api/clips/${id}`); return res.ok ? res.json() : null; }
+     }
+  */
+};
+const provider = PROVIDERS.itunes;
+
+/* Stations: each maps to a handful of search terms */
+const ARTISTS = {
+  pop:     ['taylor swift', 'dua lipa', 'olivia rodrigo', 'ariana grande', 'harry styles', 'sabrina carpenter'],
+  hiphop:  ['kendrick lamar', 'drake', 'travis scott', 'tyler the creator', 'nicki minaj', 'j cole'],
+  country: ['morgan wallen', 'luke combs', 'zach bryan', 'chris stapleton', 'kacey musgraves', 'lainey wilson'],
+  rock:    ['foo fighters', 'arctic monkeys', 'imagine dragons', 'green day', 'the killers', 'red hot chili peppers'],
+  rnb:     ['sza', 'the weeknd', 'usher', 'beyonce', 'frank ocean', 'summer walker'],
+  latin:   ['bad bunny', 'karol g', 'shakira', 'peso pluma', 'rosalia', 'j balvin'],
+  dance:   ['calvin harris', 'daft punk', 'david guetta', 'fred again', 'disclosure', 'swedish house mafia']
+};
+const STATIONS = [
+  { id: 'foryou', label: 'For You' }, { id: 'pop', label: 'Pop' }, { id: 'hiphop', label: 'Hip-hop' },
+  { id: 'country', label: 'Country' }, { id: 'rock', label: 'Rock' }, { id: 'rnb', label: 'R&B' },
+  { id: 'latin', label: 'Latin' }, { id: 'dance', label: 'Dance' }
+];
+const stationLabel = id => (STATIONS.find(s => s.id === id) || STATIONS[0]).label;
+function buildPool(id) {
+  if (id !== 'foryou') return ARTISTS[id].map(term => ({ term, station: stationLabel(id) }));
+  const out = [];
+  for (let i = 0; i < 6; i++) for (const k of shuffle(Object.keys(ARTISTS))) out.push({ term: ARTISTS[k][i], station: stationLabel(k) });
+  return out;
+}
+
+/* =====================================================================
+   State
+   ===================================================================== */
+const savedStation = store.get('snip:station', 'foryou');
+const state = {
+  view: 'feed', tab: 'saved',
+  station: STATIONS.some(s => s.id === savedStation) ? savedStation : 'foryou',
+  clips: [], active: 0, pool: [], cursor: 0, seen: new Set(), token: 0,
+  loading: false, done: false, status: 'loading', retryAfter: 0,
+  started: false, userPaused: false, currentId: null, lastFilled: -1, retried: {}, preloaded: null,
+  muted: store.get('snip:muted', false),
+  liked: store.get('snip:liked', {}),
+  saved: store.get('snip:saved', {})
+};
+const findClip = id => state.clips.find(c => c.id === id) || state.saved[id] || state.liked[id];
+const pick = c => ({ id: c.id, title: c.title, artist: c.artist, album: c.album, art: c.art, audio: c.audio, genre: c.genre, explicit: c.explicit, station: c.station });
+
+/* =====================================================================
+   Elements
+   ===================================================================== */
+const feed = $('#feed'), viewFeed = $('#viewFeed'), viewSaved = $('#viewSaved');
+const startEl = $('#start'), startBtn = $('#startBtn'), startCopy = $('#startCopy');
+const stationsEl = $('#stations'), toasts = $('#toasts');
+const shareDlg = $('#shareDlg'), aboutDlg = $('#aboutDlg');
+const coarse = matchMedia('(pointer: coarse)').matches;
+const START_COPY = 'Scroll through short clips, heart the ones you love, and save them for later.';
+
+/* =====================================================================
+   Audio: one element, reused, so mobile browsers keep it unlocked
+   ===================================================================== */
+const audio = new Audio();
+audio.preload = 'auto'; audio.loop = true; audio.muted = state.muted;
+audio.setAttribute('playsinline', '');
+const preloader = new Audio(); preloader.preload = 'auto'; preloader.muted = true;
+
+function playClip(c) {
+  if (state.currentId !== c.id) { state.currentId = c.id; audio.src = c.audio; state.lastFilled = -1; }
+  const p = audio.play();
+  if (p && p.catch) p.catch(err => {
+    if (err.name === 'NotAllowedError') { state.userPaused = true; paintPlaying(); toast('Tap the artwork to play.'); }
+  });
+}
+function togglePlay() {
+  if (!state.started || !state.currentId) return;
+  if (audio.paused) { state.userPaused = false; audio.play().catch(() => {}); }
+  else { state.userPaused = true; audio.pause(); }
+  paintPlaying();
+}
+function seekBy(d) { const dur = audio.duration && isFinite(audio.duration) ? audio.duration : 30; audio.currentTime = Math.max(0, Math.min(dur - .1, audio.currentTime + d)); state.lastFilled = -1; }
+
+['play', 'pause', 'ended', 'emptied'].forEach(ev => audio.addEventListener(ev, paintPlaying));
+audio.addEventListener('timeupdate', onTime);
+audio.addEventListener('error', async () => {
+  const id = state.currentId; if (!id) return;
+  const clip = findClip(id);
+  if (clip && !state.retried[id]) {
+    state.retried[id] = true;
+    try {
+      const fresh = await provider.lookup(id);
+      if (fresh && fresh.audio) { clip.audio = fresh.audio; if (state.currentId === id) { audio.src = fresh.audio; audio.play().catch(() => {}); } return; }
+    } catch {}
+  }
+  toast("Couldn't play that clip. Try the next one.");
+});
+
+const activeSlide = () => $(`.slide[data-index="${state.active}"]`, feed);
+
+function paintTicks(slide, filled) {
+  $$('.ticks i', slide).forEach((el, i) => { el.className = i < filled ? 'on' : i === filled ? 'cur' : ''; });
+}
+function resetSlide(slide) {
+  paintTicks(slide, -1);
+  const cur = $('[data-cur]', slide); if (cur) cur.textContent = '0:00';
+}
+function onTime() {
+  const id = state.currentId; if (!id) return;
+  const dur = audio.duration && isFinite(audio.duration) ? audio.duration : 30;
+  const t = audio.currentTime, frac = Math.min(t / dur, 1);
+  const slide = $(`.slide[data-id="${id}"]`, feed);
+  if (slide) {
+    const filled = Math.min(Math.floor(frac * 30), 29);
+    if (filled !== state.lastFilled) { state.lastFilled = filled; paintTicks(slide, filled); }
+    const cur = $('[data-cur]', slide), label = fmtTime(t);
+    if (cur.textContent !== label) cur.textContent = label;
+    $('.ticks', slide).setAttribute('aria-valuenow', String(Math.round(t)));
+  }
+  $$(`.tile[data-id="${id}"]`).forEach(el => el.style.setProperty('--pct', (frac * 100) + '%'));
+}
+function paintPlaying() {
+  const playing = !audio.paused && !!state.currentId;
+  $$('.is-playing').forEach(el => el.classList.remove('is-playing'));
+  $$('.user-paused').forEach(el => el.classList.remove('user-paused'));
+  if (playing) $$(`.slide[data-id="${state.currentId}"], .tile[data-id="${state.currentId}"]`).forEach(el => el.classList.add('is-playing'));
+  const s = activeSlide();
+  if (state.userPaused && s) s.classList.add('user-paused');
+}
+
+/* =====================================================================
+   Rendering: feed
+   ===================================================================== */
+const likeInner = id => { const on = !!state.liked[id]; return icon('heart', { fill: on }) + `<span class="mono">${fmt(baseLikes(id) + (on ? 1 : 0))}</span>`; };
+const saveInner = id => { const on = !!state.saved[id]; return icon('bookmark', { fill: on }) + `<span>${on ? 'Saved' : 'Save'}</span>`; };
+
+function slideHTML(c, i) {
+  const liked = !!state.liked[c.id], saved = !!state.saved[c.id];
+  return `
+  <article class="slide" data-id="${c.id}" data-index="${i}" aria-label="${esc(c.title)} by ${esc(c.artist)}">
+    <div class="slide-in">
+      <div class="art-box">
+        <button class="art" aria-label="Play or pause ${esc(c.title)}">
+          <img src="${esc(c.art)}" alt="Cover art for ${esc(c.album)}" draggable="false" loading="${i < 2 ? 'eager' : 'lazy'}">
+          <span class="station-tag">${esc(c.station || c.genre || 'Clip')}</span>
+          <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span class="paused-badge">${icon('play', { fill: true, size: 28 })}</span>
+        </button>
+      </div>
+      <div class="meta">
+        <div><h2 class="title">${esc(c.title)}</h2><p class="artist">${esc(c.artist)}</p></div>
+        ${c.explicit ? '<span class="tag-e" title="Explicit">E</span>' : ''}
+      </div>
+      <div class="clip mono">
+        <span class="t" data-cur>0:00</span>
+        <div class="ticks" role="slider" tabindex="0" aria-label="Seek within the 30-second clip" aria-valuemin="0" aria-valuemax="30" aria-valuenow="0">${'<i></i>'.repeat(30)}</div>
+        <span class="t end">0:30</span>
+      </div>
+      <div class="actions">
+        <button class="act like ${liked ? 'on' : ''}" data-act="like" data-id="${c.id}" aria-pressed="${liked}" aria-label="${liked ? 'Unlike' : 'Like'}">${likeInner(c.id)}</button>
+        <button class="act save ${saved ? 'on' : ''}" data-act="save" data-id="${c.id}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from saved' : 'Save'}">${saveInner(c.id)}</button>
+        <button class="act" data-act="share" data-id="${c.id}" aria-label="Share">${icon('share')}<span>Share</span></button>
+      </div>
+      ${i === 0 ? `<p class="hint" aria-hidden="true">${coarse ? 'Swipe up for the next clip' : 'Scroll or press J for the next clip'}</p>` : ''}
+    </div>
+  </article>`;
+}
+const skeleton = (cls = '') => `
+  <article class="slide ${cls}" aria-hidden="true">
+    <div class="slide-in">
+      <div class="art-box"><div class="art sk"></div></div>
+      <div class="sk" style="height:22px;width:62%"></div>
+      <div class="sk" style="height:14px;width:36%;margin-top:-8px"></div>
+      <div class="sk" style="height:44px"></div>
+      <div class="actions"><div class="sk" style="height:48px"></div><div class="sk" style="height:48px"></div><div class="sk" style="height:48px"></div></div>
+    </div>
+  </article>`;
+const messageSlide = (iconName, title, body, btn) => `
+  <article class="slide end">
+    <div class="slide-in msg">
+      <div class="ring">${icon(iconName, { size: 22 })}</div>
+      <h2 class="text-lg font-semibold tracking-tight">${esc(title)}</h2>
+      <p class="max-w-[28ch] text-sm leading-relaxed text-muted">${esc(body)}</p>
+      ${btn ? `<button class="btn mt-2" data-act="${btn.act}">${esc(btn.label)}</button>` : ''}
+    </div>
+  </article>`;
+
+const io = new IntersectionObserver(entries => {
+  for (const e of entries) if (e.isIntersecting && e.intersectionRatio >= .6) activate(+e.target.dataset.index);
+}, { root: feed, threshold: [.6] });
+
+function renderSlides(from) {
+  if (from === 0) { io.disconnect(); feed.innerHTML = ''; }
+  const html = state.clips.slice(from).map((c, k) => slideHTML(c, from + k)).join('');
+  const tail = $('.tail', feed);
+  if (tail) tail.insertAdjacentHTML('beforebegin', html); else feed.insertAdjacentHTML('beforeend', html);
+  $$('.slide[data-index]', feed).forEach(el => { if (+el.dataset.index >= from) io.observe(el); });
+}
+const showTail = () => { if (!$('.tail', feed)) feed.insertAdjacentHTML('beforeend', skeleton('tail')); };
+const hideTail = () => { const t = $('.tail', feed); if (t) t.remove(); };
+
+function activate(i) {
+  const c = state.clips[i]; if (!c) return;
+  if (i !== state.active) { const prev = activeSlide(); if (prev) resetSlide(prev); state.userPaused = false; }
+  state.active = i;
+  $$('.slide.active', feed).forEach(el => el.classList.remove('active'));
+  const el = activeSlide(); if (el) el.classList.add('active');
+  if (i > 0) feed.classList.add('moved');
+  $('#prevBtn').disabled = i === 0;
+  if (state.started && state.view === 'feed' && (state.currentId !== c.id || !state.userPaused)) playClip(c);
+  paintPlaying();
+  if (i >= state.clips.length - 3) loadMore();
+  const nx = state.clips[i + 1];
+  if (nx && state.preloaded !== nx.id) { state.preloaded = nx.id; preloader.src = nx.audio; }
+}
+function go(d) {
+  const t = $(`.slide[data-index="${state.active + d}"]`, feed);
+  if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* =====================================================================
+   Loading clips
+   ===================================================================== */
+function updateStart() {
+  startBtn.dataset.mode = state.status;
+  if (state.status === 'loading') { startBtn.disabled = true; startBtn.textContent = 'Tuning in…'; startCopy.textContent = START_COPY; }
+  else if (state.status === 'error') { startBtn.disabled = false; startBtn.textContent = 'Try again'; startCopy.textContent = "We couldn't reach the music catalog. Check your connection, then try again."; }
+  else { startBtn.disabled = false; startBtn.textContent = 'Start listening'; startCopy.textContent = START_COPY; }
+}
+
+async function loadMore() {
+  if (state.loading || state.done || Date.now() < state.retryAfter) return;
+  state.loading = true;
+  const token = state.token;
+  if (state.clips.length) showTail();
+  let fresh = [], allFailed = false;
+  try {
+    for (let attempt = 0; attempt < 3 && !fresh.length; attempt++) {
+      const picks = [];
+      for (let k = 0; k < 6; k++) {
+        const n = state.cursor++, p = state.pool[n % state.pool.length];
+        picks.push({ term: p.term, station: p.station, offset: Math.floor(n / state.pool.length) * 10 });
+      }
+      const res = await Promise.allSettled(picks.map(p => provider.search(p.term, { offset: p.offset }).then(list => list.map(c => ({ ...c, station: p.station })))));
+      if (token !== state.token) return;
+      allFailed = res.every(r => r.status === 'rejected');
+      if (allFailed) break;
+      const perArtist = {};
+      fresh = shuffle(res.flatMap(r => r.status === 'fulfilled' ? r.value : []).filter(c => !state.seen.has(c.id)))
+        .filter(c => (perArtist[c.artist] = (perArtist[c.artist] || 0) + 1) <= 3);
+    }
+    if (token !== state.token) return;
+
+    if (fresh.length) {
+      fresh.forEach(c => state.seen.add(c.id));
+      const from = state.clips.length;
+      state.clips.push(...fresh);
+      renderSlides(from);
+      state.status = 'ready'; updateStart();
+    } else if (allFailed || !state.clips.length) {
+      if (!state.clips.length) {
+        state.status = 'error'; updateStart();
+        if (state.started) feed.innerHTML = messageSlide('radio', "Couldn't load clips", 'Check your connection, then try again.', { act: 'retry', label: 'Try again' });
+      } else { toast("Couldn't load more clips."); state.retryAfter = Date.now() + 5000; }
+    } else {
+      state.done = true;
+      feed.insertAdjacentHTML('beforeend', messageSlide('music', "That's the end of this station", 'Pick another station above, or head back to the top.', { act: 'top', label: 'Back to top' }));
+    }
+  } finally {
+    if (token === state.token) { state.loading = false; hideTail(); }
+  }
+}
+
+function setStation(id) {
+  state.station = id; store.set('snip:station', id);
+  renderStations();
+  audio.pause(); state.currentId = null; state.userPaused = false;
+  state.token++; state.clips = []; state.seen = new Set(); state.cursor = 0; state.active = 0;
+  state.pool = buildPool(id); state.loading = false; state.done = false; state.status = 'loading'; state.retryAfter = 0;
+  io.disconnect(); feed.classList.remove('moved'); feed.innerHTML = skeleton(); feed.scrollTop = 0;
+  updateStart(); loadMore();
+}
+
+function renderStations() {
+  stationsEl.innerHTML = STATIONS.map(s => `<button class="chip" data-station="${s.id}" aria-pressed="${s.id === state.station}">${esc(s.label)}</button>`).join('');
+}
+
+/* =====================================================================
+   Like, save, share
+   ===================================================================== */
+function paintLike(b, id, animate) {
+  const on = !!state.liked[id];
+  b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Unlike' : 'Like');
+  b.innerHTML = likeInner(id);
+  if (on && animate) { const svg = $('svg', b); svg.classList.add('pop'); }
+}
+function paintSave(b, id) {
+  const on = !!state.saved[id];
+  b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Remove from saved' : 'Save');
+  b.innerHTML = saveInner(id);
+}
+function syncClip(id, animate) {
+  $$(`[data-act="like"][data-id="${id}"]`).forEach(b => paintLike(b, id, animate));
+  $$(`[data-act="save"][data-id="${id}"]`).forEach(b => paintSave(b, id));
+}
+function updateCounts() {
+  const n = Object.keys(state.saved).length;
+  $$('[data-saved-count]').forEach(el => { el.textContent = n ? String(n) : ''; });
+}
+function toggleLike(id, animate = true) {
+  const c = findClip(id); if (!c) return;
+  if (state.liked[id]) delete state.liked[id]; else state.liked[id] = { ...pick(c), at: Date.now() };
+  store.set('snip:liked', state.liked);
+  syncClip(id, animate);
+}
+function toggleSave(id) {
+  const c = findClip(id); if (!c) return;
+  if (state.saved[id]) { delete state.saved[id]; toast('Removed from saved.'); }
+  else { state.saved[id] = { ...pick(c), at: Date.now() }; toast('Saved. Find it in your library.'); }
+  store.set('snip:saved', state.saved);
+  syncClip(id); updateCounts();
+}
+function burst(art, e) {
+  const r = art.getBoundingClientRect();
+  const x = e.detail === 0 ? r.width / 2 : e.clientX - r.left, y = e.detail === 0 ? r.height / 2 : e.clientY - r.top;
+  const el = document.createElement('span');
+  el.className = 'burst'; el.style.left = x + 'px'; el.style.top = y + 'px';
+  el.innerHTML = icon('heart', { fill: true, size: 88 });
+  art.appendChild(el); el.addEventListener('animationend', () => el.remove());
+}
+
+const shareLink = id => location.href.split('#')[0] + '#clip=' + id;
+function openShare(id) {
+  const c = findClip(id); if (!c) return;
+  $('#shareArt').src = c.art; $('#shareTitle').textContent = c.title; $('#shareArtist').textContent = c.artist;
+  $('#shareLink').value = shareLink(id);
+  shareDlg.showModal();
+}
+async function copyLink() {
+  const v = $('#shareLink').value;
+  try { await navigator.clipboard.writeText(v); } catch { const i = $('#shareLink'); i.select(); try { document.execCommand('copy'); } catch {} }
+  toast('Link copied.');
+}
+
+/* =====================================================================
+   Saved view
+   ===================================================================== */
+function tileHTML(c) {
+  const isSaved = state.tab === 'saved';
+  return `
+  <div class="tile" data-id="${c.id}">
+    <button class="tile-art" data-act="tile" data-id="${c.id}" aria-label="Play ${esc(c.title)} by ${esc(c.artist)}">
+      <img src="${esc(c.art)}" alt="" loading="lazy" draggable="false">
+      <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span class="tile-play"><span class="ic-play">${icon('play', { fill: true, size: 16 })}</span><span class="ic-pause">${icon('pause', { fill: true, size: 16 })}</span></span>
+      <span class="tile-prog"></span>
+    </button>
+    <div class="mt-3 flex items-start gap-2">
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-sm font-medium">${esc(c.title)}</p>
+        <p class="truncate text-sm text-muted">${esc(c.artist)}</p>
+      </div>
+      <button class="icon-btn -mr-2 -mt-2 ${isSaved ? 'text-fg' : 'text-accent'}" data-act="${isSaved ? 'unsave' : 'unlike'}" data-id="${c.id}" aria-label="${isSaved ? 'Remove from saved' : 'Remove like'}">${icon(isSaved ? 'bookmark' : 'heart', { fill: true })}</button>
+    </div>
+  </div>`;
+}
+function renderSaved() {
+  $$('[data-tab]').forEach(t => {
+    t.setAttribute('aria-selected', String(t.dataset.tab === state.tab));
+    $('.count-pill', t).textContent = String(Object.keys(state[t.dataset.tab]).length);
+  });
+  const list = Object.values(state[state.tab]).sort((a, b) => b.at - a.at);
+  const grid = $('#savedGrid');
+  if (!list.length) {
+    const saved = state.tab === 'saved';
+    grid.innerHTML = `
+      <div class="flex flex-col items-center rounded-xl border border-dashed border-line px-6 py-16 text-center">
+        <div class="ring">${icon(saved ? 'bookmark' : 'heart', { size: 22 })}</div>
+        <h2 class="mt-4 text-base font-semibold tracking-tight">${saved ? 'Nothing saved yet' : 'No hearts yet'}</h2>
+        <p class="mt-1 max-w-[32ch] text-sm leading-relaxed text-muted">${saved ? 'Tap Save on any clip and it lands here, ready for later.' : 'Heart a clip, or double-tap the artwork, to collect it here.'}</p>
+        <button class="btn mt-5" data-nav="feed">Find something new</button>
+      </div>`;
+    return;
+  }
+  grid.innerHTML = `<div class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3">${list.map(tileHTML).join('')}</div>`;
+  paintPlaying();
+}
+function playTile(id) {
+  const c = state.saved[id] || state.liked[id]; if (!c) return;
+  if (state.currentId === id) { audio.paused ? audio.play().catch(() => {}) : audio.pause(); }
+  else playClip(c);
+}
+
+/* =====================================================================
+   Views, theme, mute, toasts
+   ===================================================================== */
+function paintNav() { $$('.navtab, .bnav').forEach(n => n.dataset.nav === state.view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current')); }
+function showView(v) {
+  if (v === state.view) return;
+  state.view = v;
+  viewFeed.hidden = v !== 'feed'; viewSaved.hidden = v !== 'saved';
+  paintNav();
+  if (v === 'feed') {
+    feed.scrollTop = state.active * feed.clientHeight;
+    state.userPaused = false;
+    if (state.started) activate(state.active); else audio.pause();
+  } else {
+    audio.pause(); renderSaved(); viewSaved.scrollTop = 0;
+  }
+}
+function applyTheme(dark, persist) {
+  document.documentElement.classList.toggle('dark', dark);
+  $('#themeColor').content = dark ? '#000000' : '#ffffff';
+  $('#themeBtn').innerHTML = icon(dark ? 'sun' : 'moon');
+  if (persist) store.set('snip:theme', dark ? 'dark' : 'light');
+}
+function paintMute() {
+  audio.muted = state.muted;
+  const b = $('#muteBtn');
+  b.innerHTML = icon(state.muted ? 'volumeX' : 'volume2');
+  b.setAttribute('aria-label', state.muted ? 'Unmute' : 'Mute');
+}
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  toasts.appendChild(t);
+  while (toasts.children.length > 3) toasts.firstChild.remove();
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 220); }, 2400);
+}
+
+/* =====================================================================
+   Events
+   ===================================================================== */
+document.addEventListener('click', e => {
+  const nav = e.target.closest('[data-nav]'); if (nav) return showView(nav.dataset.nav);
+  const tab = e.target.closest('[data-tab]'); if (tab) { state.tab = tab.dataset.tab; return renderSaved(); }
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  const id = a.dataset.id;
+  switch (a.dataset.act) {
+    case 'like': toggleLike(id); break;
+    case 'save': toggleSave(id); break;
+    case 'share': openShare(id); break;
+    case 'tile': playTile(id); break;
+    case 'unsave': if (state.currentId === id) audio.pause(); toggleSave(id); renderSaved(); break;
+    case 'unlike': if (state.currentId === id) audio.pause(); toggleLike(id, false); renderSaved(); break;
+    case 'retry': setStation(state.station); break;
+    case 'top': feed.scrollTo({ top: 0, behavior: 'smooth' }); break;
+  }
+});
+
+/* Tap art: play or pause. Double-tap: like. */
+let lastTap = 0, tapTimer = null;
+feed.addEventListener('click', e => {
+  const art = e.target.closest('.art'); if (!art || !art.closest('.slide[data-id]')) return;
+  const id = art.closest('.slide').dataset.id, now = Date.now();
+  if (now - lastTap < 300) {
+    clearTimeout(tapTimer); lastTap = 0; burst(art, e);
+    if (!state.liked[id]) toggleLike(id);
+  } else {
+    lastTap = now; tapTimer = setTimeout(togglePlay, 260);
+  }
+});
+feed.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.classList.add('broken'); }, true);
+$('#savedGrid').addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.classList.add('broken'); }, true);
+
+/* Seek by tapping or dragging the ticks */
+let drag = null;
+const seekFrom = (el, e) => {
+  if (el.closest('.slide').dataset.id !== state.currentId) return;
+  const r = el.getBoundingClientRect(), f = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+  audio.currentTime = f * (audio.duration && isFinite(audio.duration) ? audio.duration : 30); state.lastFilled = -1;
+};
+feed.addEventListener('pointerdown', e => { const t = e.target.closest('.ticks'); if (!t) return; drag = t; seekFrom(t, e); });
+feed.addEventListener('pointermove', e => { if (drag) seekFrom(drag, e); });
+['pointerup', 'pointercancel'].forEach(ev => addEventListener(ev, () => { drag = null; }));
+feed.addEventListener('keydown', e => {
+  if (!e.target.closest('.ticks')) return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); seekBy(e.key === 'ArrowRight' ? 5 : -5); }
+});
+
+/* Keyboard shortcuts */
+addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey || $('dialog[open]')) return;
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if (state.view !== 'feed' || !state.started) return;
+  if (e.target.closest && e.target.closest('.ticks') && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return;
+  const k = e.key.toLowerCase(), c = state.clips[state.active];
+  if ((k === ' ' || k === 'enter') && tag === 'BUTTON') return;
+  switch (k) {
+    case 'arrowdown': case 'j': e.preventDefault(); go(1); break;
+    case 'arrowup': case 'k': e.preventDefault(); go(-1); break;
+    case ' ': e.preventDefault(); togglePlay(); break;
+    case 'l': if (c) toggleLike(c.id); break;
+    case 's': if (c) toggleSave(c.id); break;
+    case 'm': state.muted = !state.muted; store.set('snip:muted', state.muted); paintMute(); break;
+  }
+});
+
+stationsEl.addEventListener('click', e => {
+  const b = e.target.closest('[data-station]'); if (!b || b.dataset.station === state.station) return;
+  setStation(b.dataset.station);
+  const nb = $(`[data-station="${b.dataset.station}"]`, stationsEl); if (nb) nb.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+});
+
+startBtn.addEventListener('click', () => {
+  if (state.status === 'error') return setStation(state.station);
+  if (state.status !== 'ready') return;
+  state.started = true; startEl.hidden = true;
+  activate(state.active); // plays inside the tap, which unlocks audio on mobile
+});
+
+$('#prevBtn').addEventListener('click', () => go(-1));
+$('#nextBtn').addEventListener('click', () => go(1));
+$('#muteBtn').addEventListener('click', () => { state.muted = !state.muted; store.set('snip:muted', state.muted); paintMute(); });
+$('#themeBtn').addEventListener('click', () => applyTheme(!document.documentElement.classList.contains('dark'), true));
+$('#aboutBtn').addEventListener('click', () => aboutDlg.showModal());
+$('#copyBtn').addEventListener('click', copyLink);
+
+[shareDlg, aboutDlg].forEach(d => d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) d.close(); }));
+shareDlg.addEventListener('click', e => {
+  const t = e.target.closest('[data-share]'); if (!t) return;
+  toast(`Shared to ${t.dataset.share} (demo).`); shareDlg.close();
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) audio.pause();
+  else if (state.view === 'feed' && state.started && !state.userPaused && state.currentId) audio.play().catch(() => {});
+});
+
+/* =====================================================================
+   Boot
+   ===================================================================== */
+async function init() {
+  $$('[data-i]').forEach(el => { el.innerHTML = icon(el.dataset.i, { size: +el.dataset.s || 20 }); });
+  applyTheme(document.documentElement.classList.contains('dark'), false);
+  paintMute(); renderStations(); paintNav(); updateCounts(); updateStart();
+  state.pool = buildPool(state.station);
+  feed.innerHTML = skeleton();
+
+  // Shared link: #clip=<id> puts that clip first
+  const m = location.hash.match(/clip=(\d+)/);
+  if (m) {
+    try {
+      const c = await provider.lookup(m[1]);
+      if (c) { c.station = 'Shared with you'; state.seen.add(c.id); state.clips.push(c); renderSlides(0); }
+    } catch {}
+  }
+  loadMore();
+}
+init();
+})();
+</script>
+</body>
+</html>
