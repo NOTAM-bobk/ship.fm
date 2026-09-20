@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>snip.fm: 30-second music clips</title>
-<meta name="description" content="Scroll through 30-second music clips. Heart what you love and save it for later.">
+<meta name="description" content="Scroll 30-second clips, mix your favorite genres, search the catalog, and level up your taste.">
 <meta name="theme-color" content="#ffffff" id="themeColor">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23000'/%3E%3Cg fill='%23fff'%3E%3Crect x='4.75' y='9' width='2.5' height='6' rx='1'/%3E%3Crect x='8.75' y='6' width='2.5' height='12' rx='1'/%3E%3Crect x='12.75' y='7.5' width='2.5' height='9' rx='1'/%3E%3Crect x='16.75' y='9.5' width='2.5' height='5' rx='1'/%3E%3C/g%3E%3C/svg%3E">
 
@@ -12,8 +12,9 @@
 <script>
 (function () {
   try {
-    var saved = JSON.parse(localStorage.getItem('snip:theme'));
-    var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var prefs = JSON.parse(localStorage.getItem('snip:prefs') || '{}');
+    var t = prefs.theme || 'system';
+    var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.classList.toggle('dark', dark);
   } catch (e) {}
 })();
@@ -33,6 +34,9 @@
           surface: 'var(--surface)',
           surface2: 'var(--surface-2)',
           accent: 'var(--accent)'
+        },
+        fontFamily: {
+          round: ['ui-rounded', '"SF Pro Rounded"', '"Segoe UI"', 'system-ui', 'sans-serif']
         }
       }
     }
@@ -45,6 +49,7 @@
     --bg: #ffffff; --fg: #0a0a0a; --muted: #52525b; --line: #e4e4e7;
     --surface: #fafafa; --surface-2: #f4f4f5;
     --accent: #c6002b; --on-accent: #ffffff;
+    --spring: cubic-bezier(.34, 1.56, .64, 1);
     color-scheme: light;
   }
   .dark {
@@ -64,6 +69,7 @@
     -webkit-tap-highlight-color: transparent;
   }
   .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-variant-numeric: tabular-nums; }
+  .round { font-family: ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, sans-serif; }
   button { cursor: pointer; }
   button:disabled { cursor: not-allowed; }
   :focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
@@ -73,33 +79,34 @@
   /* ---------- Shared controls ---------- */
   .icon-btn {
     display: inline-grid; place-items: center; width: 44px; height: 44px;
-    border-radius: 6px; color: var(--muted); transition: color .12s, background .12s;
+    border-radius: 999px; color: var(--muted); transition: color .12s, background .12s, transform .12s var(--spring);
   }
   .icon-btn:hover { color: var(--fg); background: var(--surface-2); }
-  .icon-btn:active { transform: scale(.96); }
+  .icon-btn:active { transform: scale(.9); }
   .fab {
     display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 999px;
     border: 1px solid var(--line); background: var(--bg); color: var(--fg);
-    box-shadow: 0 2px 8px rgba(0,0,0,.08); transition: background .12s, opacity .12s;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08); transition: background .12s, opacity .12s, transform .15s var(--spring);
   }
-  .fab:hover { background: var(--surface-2); }
+  .fab:hover { background: var(--surface-2); transform: scale(1.08); }
   .fab:disabled { opacity: .35; }
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    min-height: 44px; padding: 0 16px; border: 1px solid var(--line); border-radius: 6px;
-    background: var(--bg); color: var(--fg); font-size: 14px; font-weight: 500;
-    transition: background .12s, border-color .12s, transform .06s;
+    min-height: 44px; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--bg); color: var(--fg); font-size: 14px; font-weight: 600;
+    transition: background .12s, border-color .12s, transform .12s var(--spring);
   }
   .btn:hover { background: var(--surface-2); border-color: var(--muted); }
-  .btn:active { transform: scale(.98); }
+  .btn:active { transform: scale(.96); }
   .btn-primary {
     display: inline-flex; align-items: center; justify-content: center;
-    min-height: 48px; padding: 0 28px; border-radius: 6px; border: 0;
-    background: var(--accent); color: var(--on-accent); font-size: 15px; font-weight: 600;
-    transition: filter .12s, transform .06s;
+    min-height: 52px; padding: 0 32px; border-radius: 999px; border: 0;
+    background: var(--accent); color: var(--on-accent); font-size: 15px; font-weight: 700;
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 35%, transparent);
+    transition: filter .12s, transform .15s var(--spring);
   }
-  .btn-primary:hover:not(:disabled) { filter: brightness(.92); }
-  .btn-primary:active:not(:disabled) { transform: scale(.98); }
+  .btn-primary:hover:not(:disabled) { filter: brightness(.92); transform: scale(1.03); }
+  .btn-primary:active:not(:disabled) { transform: scale(.96); }
   .btn-primary:disabled { opacity: .5; }
   .count-pill {
     display: inline-block; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 4px;
@@ -109,38 +116,53 @@
   .count-pill:empty { display: none; }
   .kbd {
     font: 500 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px;
+    border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px;
     padding: 1px 6px; background: var(--surface);
   }
 
   /* ---------- Header + nav ---------- */
+  #logoBtn svg { transition: transform .35s var(--spring); }
+  #logoBtn:hover svg { transform: rotate(-10deg) scale(1.1); }
   .navtab {
-    position: relative; height: 56px; padding: 0 12px; font-size: 14px; color: var(--muted);
-    transition: color .12s;
+    position: relative; height: 56px; padding: 0 12px; font-size: 14px; font-weight: 500; color: var(--muted);
+    transition: color .12s, transform .12s var(--spring);
   }
   .navtab:hover { color: var(--fg); }
-  .navtab[aria-current="page"] { color: var(--fg); font-weight: 500; }
+  .navtab:active { transform: scale(.95); }
+  .navtab[aria-current="page"] { color: var(--fg); }
   .navtab[aria-current="page"]::after {
-    content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; background: var(--fg);
+    content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 3px; border-radius: 999px; background: var(--accent);
   }
   .bnav {
     position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 2px; min-height: 56px; font-size: 12px; color: var(--muted);
+    gap: 2px; min-height: 56px; font-size: 12px; color: var(--muted); transition: color .12s, transform .12s var(--spring);
   }
-  .bnav[aria-current="page"] { color: var(--fg); font-weight: 500; }
+  .bnav:active { transform: scale(.92); }
+  .bnav[aria-current="page"] { color: var(--fg); }
   .bnav[aria-current="page"]::before {
-    content: ""; position: absolute; top: -1px; left: 30%; right: 30%; height: 2px; background: var(--fg);
+    content: ""; position: absolute; top: -1px; left: 30%; right: 30%; height: 3px; border-radius: 999px; background: var(--accent);
   }
 
-  /* ---------- Stations ---------- */
+  /* ---------- Stations: playful multi-select pills ---------- */
   .chip {
-    position: relative; flex: none; height: 36px; padding: 0 14px; border: 1px solid var(--line);
-    border-radius: 6px; background: var(--bg); color: var(--muted); font-size: 14px; font-weight: 500;
-    transition: color .12s, border-color .12s, background .12s;
+    position: relative; flex: none; height: 38px; padding: 0 16px; border: 1.5px solid var(--line);
+    border-radius: 999px; background: var(--bg); color: var(--muted); font-size: 14px; font-weight: 600;
+    transition: color .12s, border-color .12s, background .12s, transform .15s var(--spring), box-shadow .15s;
   }
   .chip::before { content: ""; position: absolute; inset: -4px 0; } /* 44px touch target */
   .chip:hover { color: var(--fg); border-color: var(--muted); }
-  .chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .chip:active { transform: scale(.92); }
+  .chip[aria-pressed="true"] {
+    background: var(--accent); color: var(--on-accent); border-color: var(--accent);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  .chip.wiggle { animation: wiggle .45s var(--spring); }
+  .vibe { height: 34px; padding: 0 14px; font-size: 13px; }
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0); }
+    30% { transform: rotate(-5deg) scale(1.08); }
+    65% { transform: rotate(4deg) scale(1.05); }
+  }
 
   /* ---------- Feed ---------- */
   #feed {
@@ -160,21 +182,22 @@
   .art {
     position: relative; display: block; padding: 0; overflow: hidden;
     width: min(100%, 50dvh); aspect-ratio: 1;
-    border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2);
-    transition: transform .12s;
+    border: 1px solid var(--line); border-radius: 20px; background: var(--surface-2);
+    transition: transform .15s var(--spring), box-shadow .2s;
   }
   @supports (width: 1cqw) { .art { width: min(100cqw, 100cqh); height: min(100cqw, 100cqh); aspect-ratio: auto; } }
-  button.art:active { transform: scale(.995); }
+  button.art:active { transform: scale(.98); }
+  .slide.is-playing button.art { box-shadow: 0 12px 40px rgba(0,0,0,.18); }
   .art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; user-select: none; -webkit-user-drag: none; }
   .art img.broken, .tile-art img.broken { visibility: hidden; }
 
   .station-tag {
-    position: absolute; left: 12px; top: 12px; padding: 4px 8px; border-radius: 6px;
-    background: var(--bg); border: 1px solid var(--line); color: var(--fg); font-size: 12px; font-weight: 500;
+    position: absolute; left: 12px; top: 12px; padding: 4px 10px; border-radius: 999px;
+    background: var(--bg); border: 1px solid var(--line); color: var(--fg); font-size: 12px; font-weight: 600;
   }
   .eq {
     position: absolute; left: 12px; bottom: 12px; display: none; align-items: flex-end; gap: 2px;
-    height: 28px; padding: 6px 8px; border-radius: 6px; background: var(--fg); box-sizing: border-box;
+    height: 28px; padding: 6px 8px; border-radius: 999px; background: var(--fg); box-sizing: border-box;
   }
   .eq i { display: block; width: 3px; height: 30%; border-radius: 1px; background: var(--bg); animation: eq .9s ease-in-out infinite; }
   .eq i:nth-child(2) { animation-duration: .7s; animation-delay: -.3s; }
@@ -186,7 +209,7 @@
   .paused-badge {
     position: absolute; inset: 0; margin: auto; width: 72px; height: 72px; border-radius: 999px;
     display: grid; place-items: center; background: var(--fg); color: var(--bg);
-    opacity: 0; transform: scale(.8); transition: opacity .15s, transform .15s; pointer-events: none;
+    opacity: 0; transform: scale(.8); transition: opacity .15s, transform .15s var(--spring); pointer-events: none;
   }
   .slide.user-paused .paused-badge { opacity: 1; transform: none; }
 
@@ -194,16 +217,16 @@
 
   .meta { display: flex; align-items: center; gap: 10px; }
   .meta > div { min-width: 0; flex: 1; }
-  .title { font-size: 20px; font-weight: 600; letter-spacing: -.02em; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .title { font-size: 20px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .artist { margin-top: 2px; font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tag-e { flex: none; font: 600 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 2px 5px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); }
+  .tag-e { flex: none; font: 600 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 2px 5px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); }
 
   /* The 30-second clip: one tick per second */
   .clip { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
   .clip .t { width: 32px; }
   .clip .t.end { text-align: right; }
   .ticks { flex: 1; display: flex; align-items: center; gap: 3px; height: 44px; cursor: pointer; touch-action: pan-y; }
-  .ticks i { flex: 1; height: 14px; border-radius: 1px; background: var(--line); transition: background .12s; }
+  .ticks i { flex: 1; height: 14px; border-radius: 2px; background: var(--line); transition: background .12s, height .15s var(--spring); }
   .ticks i.on { background: var(--fg); }
   .ticks i.cur { background: var(--accent); height: 24px; }
   .ticks:hover i:not(.on):not(.cur) { background: var(--muted); opacity: .5; }
@@ -211,15 +234,15 @@
   .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .act {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    min-height: 48px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg);
-    font-size: 14px; font-weight: 500; transition: background .12s, border-color .12s, color .12s, transform .06s;
+    min-height: 48px; border: 1.5px solid var(--line); border-radius: 16px; background: var(--bg); color: var(--fg);
+    font-size: 14px; font-weight: 600; transition: background .12s, border-color .12s, color .12s, transform .15s var(--spring);
   }
   .act:hover { background: var(--surface-2); border-color: var(--muted); }
-  .act:active { transform: scale(.97); }
-  .act.like.on { color: var(--accent); }
+  .act:active { transform: scale(.93); }
+  .act.like.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
   .act.like.on svg { fill: currentColor; }
   .act.save.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-  .act svg.pop { animation: pop .35s ease-out; }
+  .act svg.pop { animation: pop .35s var(--spring); }
 
   .hint {
     position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 12px; color: var(--muted);
@@ -228,22 +251,24 @@
   #feed.moved .hint { display: none; }
 
   .sk { background: var(--surface-2); border-radius: 6px; animation: pulse 1.4s ease-in-out infinite; }
-  .art.sk { border-radius: 12px; }
+  .art.sk, .tile-art.sk { border-radius: 20px; }
   .ring { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); }
 
-  /* ---------- Saved grid ---------- */
+  /* ---------- Library tabs ---------- */
   .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
   .tab { position: relative; min-height: 44px; padding: 0 12px; font-size: 14px; color: var(--muted); }
   .tab:hover { color: var(--fg); }
-  .tab[aria-selected="true"] { color: var(--fg); font-weight: 500; }
-  .tab[aria-selected="true"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; background: var(--fg); }
+  .tab[aria-selected="true"] { color: var(--fg); font-weight: 600; }
+  .tab[aria-selected="true"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 3px; border-radius: 999px; background: var(--accent); }
+
+  /* ---------- Tiles (search + library grids) ---------- */
   .tile-art {
     position: relative; display: block; width: 100%; aspect-ratio: 1; padding: 0; overflow: hidden;
-    border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2);
-    transition: border-color .12s, transform .06s;
+    border: 1px solid var(--line); border-radius: 20px; background: var(--surface-2);
+    transition: border-color .12s, transform .15s var(--spring);
   }
-  .tile-art:hover { border-color: var(--muted); }
-  .tile-art:active { transform: scale(.98); }
+  .tile-art:hover { border-color: var(--muted); transform: scale(1.02); }
+  .tile-art:active { transform: scale(.96); }
   .tile-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .tile-play {
     position: absolute; right: 8px; bottom: 8px; width: 36px; height: 36px; border-radius: 999px;
@@ -252,21 +277,82 @@
   .tile .ic-pause { display: none; }
   .tile.is-playing .ic-pause { display: block; }
   .tile.is-playing .ic-play { display: none; }
-  .tile-prog { position: absolute; left: 0; bottom: 0; height: 3px; width: var(--pct, 0%); background: var(--accent); opacity: 0; }
+  .tile-prog { position: absolute; left: 0; bottom: 0; height: 3px; width: var(--pct, 0%); background: var(--accent); opacity: 0; border-radius: 999px; }
   .tile.is-playing .tile-prog { opacity: 1; }
+
+  /* ---------- Search bar ---------- */
+  .search-bar {
+    display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 8px 0 16px;
+    border: 1.5px solid var(--line); border-radius: 999px; background: var(--surface);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .search-bar:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 15%, transparent); }
+  .sb-ic { display: grid; place-items: center; color: var(--muted); }
+  .search-bar input { flex: 1; min-width: 0; border: 0; background: transparent; color: inherit; font-size: 16px; outline: none; }
+  .search-bar input::-webkit-search-cancel-button { display: none; }
+
+  /* ---------- Profile (Instagram-style) ---------- */
+  .avatar-ring { padding: 4px; border-radius: 999px; background: conic-gradient(from 210deg, var(--accent), #FBBC04, #34A853, #4285F4, var(--accent)); flex: none; }
+  .avatar {
+    display: grid; place-items: center; width: 84px; height: 84px; border-radius: 999px;
+    background: var(--surface-2); border: 3px solid var(--bg); font-size: 40px; user-select: none;
+  }
+  .badge {
+    display: inline-block; margin-left: 8px; padding: 3px 10px; border-radius: 999px; vertical-align: 2px;
+    background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 700; letter-spacing: .02em;
+  }
+  .stat-num { font-size: 22px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .stat-lab { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .card { border: 1px solid var(--line); border-radius: 20px; padding: 16px; background: var(--surface); }
+  .lvl-bar { height: 12px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .lvl-bar > div {
+    height: 100%; width: 0%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), #FBBC04);
+    transition: width .6s var(--spring);
+  }
+  .flame { display: grid; place-items: center; width: 52px; height: 52px; font-size: 26px; border-radius: 999px; background: var(--surface-2); flex: none; }
+  .flame.on { animation: bob 2s ease-in-out infinite; }
+  .gdot { flex: none; width: 68px; }
+  .gdot-ring { display: grid; place-items: center; width: 64px; height: 64px; margin: 0 auto; border-radius: 999px; padding: 3px; background: conic-gradient(var(--gc, var(--accent)) 0 65%, var(--line) 65% 100%); }
+  .gdot-in { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 999px; background: var(--surface-2); font-size: 22px; }
+
+  /* ---------- Settings ---------- */
+  .set-h { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 20px 0 6px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; cursor: pointer; }
+  .row-t { display: block; font-size: 14px; font-weight: 600; }
+  .row-s { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .seg { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface-2); }
+  .seg-btn {
+    min-height: 36px; padding: 0 16px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--muted);
+    transition: background .15s, color .15s, transform .12s var(--spring);
+  }
+  .seg-btn:active { transform: scale(.94); }
+  .seg-btn[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+  .sw {
+    appearance: none; -webkit-appearance: none; position: relative; width: 52px; height: 32px; flex: none;
+    border-radius: 999px; background: var(--line); transition: background .15s; cursor: pointer; margin: 0;
+  }
+  .sw::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 999px;
+    background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25); transition: transform .2s var(--spring);
+  }
+  .sw:checked { background: var(--accent); }
+  .sw:checked::after { transform: translateX(20px); }
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat-card { border: 1px solid var(--line); border-radius: 16px; padding: 10px 6px; text-align: center; background: var(--bg); }
 
   /* ---------- Dialogs + toasts ---------- */
   dialog {
-    padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--fg);
+    padding: 0; border: 1px solid var(--line); border-radius: 24px; background: var(--bg); color: var(--fg);
     width: min(420px, calc(100vw - 32px)); max-height: 88dvh; overflow-y: auto;
     box-shadow: 0 16px 48px rgba(0,0,0,.28);
   }
   dialog::backdrop { background: rgba(0,0,0,.55); }
-  dialog[open] { animation: sheetIn .18s ease-out; }
+  dialog[open] { animation: sheetIn .22s var(--spring); }
   @media (max-width: 639px) {
-    dialog { margin: auto 0 0 0; width: 100%; max-width: 100%; border-radius: 16px 16px 0 0; border-bottom: 0; padding-bottom: env(safe-area-inset-bottom); }
+    dialog { margin: auto 0 0 0; width: 100%; max-width: 100%; border-radius: 24px 24px 0 0; border-bottom: 0; padding-bottom: env(safe-area-inset-bottom); }
   }
-  .target { display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 44px; padding: 8px 0; border-radius: 6px; font-size: 12px; color: var(--muted); }
+  .target { display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 44px; padding: 8px 0; border-radius: 12px; font-size: 12px; color: var(--muted); }
   .target:hover { color: var(--fg); background: var(--surface-2); }
   .target-ic { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--line); color: var(--fg); }
 
@@ -276,10 +362,39 @@
   }
   @media (min-width: 768px) { #toasts { left: auto; right: 24px; transform: none; bottom: 24px; } }
   .toast {
-    background: var(--fg); color: var(--bg); padding: 12px 16px; border-radius: 6px; font-size: 14px; font-weight: 500;
-    box-shadow: 0 8px 24px rgba(0,0,0,.22); animation: toastIn .18s ease-out;
+    background: var(--fg); color: var(--bg); padding: 12px 16px; border-radius: 999px; font-size: 14px; font-weight: 600;
+    box-shadow: 0 8px 24px rgba(0,0,0,.22); animation: toastIn .2s var(--spring);
   }
   .toast.out { opacity: 0; transition: opacity .2s; }
+
+  /* ---------- XP pops + confetti (expressive motion) ---------- */
+  .xp-float {
+    position: fixed; z-index: 70; pointer-events: none; transform: translate(-50%, -50%);
+    font-size: 13px; font-weight: 700; color: var(--accent); background: var(--bg);
+    border: 1.5px solid var(--accent); padding: 4px 10px; border-radius: 999px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.15); animation: xpUp .8s var(--spring) forwards;
+  }
+  @keyframes xpUp {
+    0% { opacity: 0; transform: translate(-50%, -30%) scale(.6); }
+    20% { opacity: 1; transform: translate(-50%, -70%) scale(1.1); }
+    100% { opacity: 0; transform: translate(-50%, -170%) scale(1); }
+  }
+  .cf {
+    position: fixed; z-index: 70; width: 9px; height: 13px; border-radius: 2px; pointer-events: none;
+    transform: translate(-50%,-50%); animation: cf .9s cubic-bezier(.12,.75,.35,1) forwards;
+  }
+  @keyframes cf {
+    0% { opacity: 1; transform: translate(-50%,-50%) rotate(0deg) scale(1); }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(.7); }
+  }
+
+  /* ---------- Start screen floaties ---------- */
+  .floaties span { position: absolute; font-size: 26px; opacity: .45; animation: floaty 4.5s ease-in-out infinite; pointer-events: none; }
+  .floaties span:nth-child(1) { left: 8%; top: 20%; }
+  .floaties span:nth-child(2) { right: 10%; top: 28%; font-size: 20px; animation-delay: 1.2s; }
+  .floaties span:nth-child(3) { left: 16%; bottom: 24%; font-size: 22px; animation-delay: 2s; }
+  .floaties span:nth-child(4) { right: 18%; bottom: 32%; animation-delay: .6s; }
+  @keyframes floaty { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-14px) rotate(8deg); } }
 
   /* ---------- Motion ---------- */
   @keyframes eq { 0%, 100% { height: 25%; } 50% { height: 100%; } }
@@ -291,14 +406,13 @@
     25% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
     100% { transform: translate(-50%, -85%) scale(1); opacity: 0; }
   }
-  @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  @keyframes sheetIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(8px) scale(.95); } to { opacity: 1; transform: none; } }
+  @keyframes sheetIn { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
   }
 </style>
 </head>
-
 <body class="bg-bg text-fg antialiased">
 <noscript><p style="padding:24px">snip.fm needs JavaScript to play clips.</p></noscript>
 
@@ -307,7 +421,7 @@
   <!-- Header -->
   <header class="shrink-0 border-b border-line bg-bg" style="padding-top:env(safe-area-inset-top)">
     <div class="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-4 sm:px-6">
-      <button data-nav="feed" class="flex min-h-[44px] items-center gap-2 rounded-md pr-2" aria-label="snip.fm, go to feed">
+      <button id="logoBtn" data-nav="feed" class="flex min-h-[44px] items-center gap-2 rounded-full pr-2" aria-label="snip.fm, go to feed">
         <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
           <rect width="24" height="24" rx="6" fill="currentColor"/>
           <g fill="var(--bg)">
@@ -315,16 +429,17 @@
             <rect x="12.75" y="7.5" width="2.5" height="9" rx="1"/><rect x="16.75" y="9.5" width="2.5" height="5" rx="1"/>
           </g>
         </svg>
-        <span class="text-[15px] font-semibold tracking-tight">snip<span class="text-muted">.fm</span></span>
+        <span class="round text-[15px] font-bold tracking-tight">snip<span class="text-muted">.fm</span></span>
       </button>
       <nav class="ml-4 hidden items-center md:flex" aria-label="Primary">
         <button class="navtab" data-nav="feed" aria-current="page">Feed</button>
-        <button class="navtab" data-nav="saved">Saved<span class="count-pill mono" data-saved-count></span></button>
+        <button class="navtab" data-nav="search">Search</button>
+        <button class="navtab" data-nav="profile">Profile<span class="count-pill mono" data-saved-count></span></button>
       </nav>
       <div class="ml-auto flex items-center">
+        <button data-nav="search" class="icon-btn md:hidden" aria-label="Search" data-i="search"></button>
         <button id="muteBtn" class="icon-btn" aria-label="Mute"></button>
-        <button id="themeBtn" class="icon-btn" aria-label="Switch theme"></button>
-        <button id="aboutBtn" class="icon-btn" aria-label="About snip.fm" data-i="info"></button>
+        <button id="settingsBtn" class="icon-btn" aria-label="Settings" data-i="settings"></button>
       </div>
     </div>
   </header>
@@ -335,7 +450,7 @@
     <!-- Feed view -->
     <section id="viewFeed" class="absolute inset-0 flex flex-col" aria-label="Feed">
       <div class="shrink-0 border-b border-line">
-        <div id="stations" class="no-sb mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-2 sm:px-6" role="group" aria-label="Stations"></div>
+        <div id="stations" class="no-sb mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-2 sm:px-6" role="group" aria-label="Stations — tap to mix genres"></div>
       </div>
       <div class="relative min-h-0 flex-1">
         <div id="feed" aria-label="Music clips"></div>
@@ -346,7 +461,8 @@
         </div>
 
         <!-- Start screen: browsers only allow sound after a tap -->
-        <div id="start" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-bg px-6 text-center">
+        <div id="start" class="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-hidden bg-bg px-6 text-center">
+          <div class="floaties" aria-hidden="true"><span>🎵</span><span>🎶</span><span>✨</span><span>🎧</span></div>
           <div class="flex max-w-sm flex-col items-center">
             <svg width="48" height="48" viewBox="0 0 24 24" aria-hidden="true">
               <rect width="24" height="24" rx="6" fill="currentColor"/>
@@ -355,25 +471,67 @@
                 <rect x="12.75" y="7.5" width="2.5" height="9" rx="1"/><rect x="16.75" y="9.5" width="2.5" height="5" rx="1"/>
               </g>
             </svg>
-            <h1 class="mt-6 text-3xl font-semibold tracking-tight">Thirty seconds. One song. Next.</h1>
+            <h1 class="round mt-6 text-3xl font-bold tracking-tight">Thirty seconds. One song. Next.</h1>
             <p id="startCopy" class="mt-3 text-[15px] leading-relaxed text-muted"></p>
-            <button id="startBtn" class="btn-primary mt-8" disabled>Tuning in…</button>
+            <button id="startBtn" class="btn-primary round mt-8" disabled>Tuning in…</button>
             <p class="mt-4 text-sm text-muted">Sound on. Headphones recommended.</p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Saved view -->
-    <section id="viewSaved" class="absolute inset-0 overflow-y-auto" aria-label="Saved" hidden>
+    <!-- Search view -->
+    <section id="viewSearch" class="absolute inset-0 overflow-y-auto" aria-label="Search" hidden>
+      <div class="mx-auto w-full max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
+        <form id="searchForm" class="search-bar" role="search">
+          <span class="sb-ic" data-i="search" data-s="18"></span>
+          <input id="searchInput" type="search" placeholder="Songs, artists, moods…" autocomplete="off" enterkeyhint="search" aria-label="Search music">
+          <button type="button" id="searchClear" class="icon-btn !h-9 !w-9" aria-label="Clear search" hidden data-i="x" data-s="16"></button>
+        </form>
+        <div id="vibes" class="mt-4 flex flex-wrap gap-2" aria-label="Suggested vibes"></div>
+        <div id="searchMeta" class="mt-5 text-sm text-muted" hidden></div>
+        <div id="searchGrid" class="mt-4"></div>
+      </div>
+    </section>
+
+    <!-- Profile view (Instagram-style) -->
+    <section id="viewProfile" class="absolute inset-0 overflow-y-auto" aria-label="Profile" hidden>
       <div class="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
-        <div class="flex items-center gap-4">
-          <div class="ring !h-14 !w-14" data-i="music" data-s="24"></div>
-          <div class="min-w-0">
-            <h1 class="text-xl font-semibold tracking-tight">Your library</h1>
-            <p class="text-sm text-muted">Everything you saved or hearted, newest first.</p>
+        <div class="flex items-center gap-6 sm:gap-8">
+          <div class="avatar-ring"><div class="avatar" id="pAvatar">🎧</div></div>
+          <div class="grid flex-1 grid-cols-3 text-center">
+            <div><p class="stat-num" id="stHeard">0</p><p class="stat-lab">Clips</p></div>
+            <div><p class="stat-num" id="stLiked">0</p><p class="stat-lab">Liked</p></div>
+            <div><p class="stat-num" id="stSaved">0</p><p class="stat-lab">Saved</p></div>
           </div>
         </div>
+        <div class="mt-4">
+          <p class="round text-lg font-bold tracking-tight">you <span class="badge" id="pLevelBadge">Lvl 1</span></p>
+          <p class="text-sm text-muted">30 seconds at a time 🎧</p>
+        </div>
+
+        <div class="card mt-5">
+          <div class="flex items-center justify-between gap-3">
+            <span class="flex items-center gap-2 text-sm font-semibold"><span class="text-accent" data-i="zap" data-s="16"></span>Level progress</span>
+            <span class="mono text-xs text-muted" id="pXpTxt">0 / 100 XP</span>
+          </div>
+          <div class="lvl-bar mt-3"><div id="pXpBar"></div></div>
+          <p class="mt-2 text-xs text-muted" id="pXpHint"></p>
+        </div>
+
+        <div class="card mt-3 flex items-center gap-4">
+          <div class="flame" id="pFlame">🔥</div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold"><span id="streakNow" class="mono">0</span>-day listening streak</p>
+            <p class="mt-0.5 text-xs text-muted">Come back tomorrow to keep it alive · best: <span id="streakBest" class="mono">0</span></p>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <h2 class="round text-sm font-bold tracking-tight">Your vibe mix</h2>
+          <div id="genreDots" class="no-sb mt-3 flex gap-5 overflow-x-auto pb-1"></div>
+        </div>
+
         <div class="tabs mt-6" role="tablist" aria-label="Library">
           <button class="tab" role="tab" data-tab="saved" aria-selected="true">Saved <span class="count-pill mono">0</span></button>
           <button class="tab" role="tab" data-tab="liked" aria-selected="false">Liked <span class="count-pill mono">0</span></button>
@@ -384,9 +542,10 @@
   </main>
 
   <!-- Bottom nav (mobile) -->
-  <nav class="grid shrink-0 grid-cols-2 border-t border-line bg-bg md:hidden" style="padding-bottom:env(safe-area-inset-bottom)" aria-label="Primary">
+  <nav class="grid shrink-0 grid-cols-3 border-t border-line bg-bg md:hidden" style="padding-bottom:env(safe-area-inset-bottom)" aria-label="Primary">
     <button class="bnav" data-nav="feed" aria-current="page"><span data-i="radio"></span><span>Feed</span></button>
-    <button class="bnav" data-nav="saved"><span data-i="bookmark"></span><span>Saved<span class="count-pill mono" data-saved-count></span></span></button>
+    <button class="bnav" data-nav="search"><span data-i="search"></span><span>Search</span></button>
+    <button class="bnav" data-nav="profile"><span data-i="user"></span><span>Profile<span class="count-pill mono" data-saved-count></span></span></button>
   </nav>
 </div>
 
@@ -394,13 +553,13 @@
 <dialog id="shareDlg" aria-labelledby="shareHeading">
   <div class="p-5">
     <div class="flex items-center justify-between">
-      <h2 id="shareHeading" class="text-base font-semibold tracking-tight">Share this clip</h2>
+      <h2 id="shareHeading" class="round text-base font-bold tracking-tight">Share this clip</h2>
       <button class="icon-btn -mr-2" data-close aria-label="Close" data-i="x"></button>
     </div>
-    <div class="mt-4 flex items-center gap-3 rounded-lg border border-line p-3">
-      <img id="shareArt" class="h-12 w-12 rounded-md border border-line object-cover" alt="">
+    <div class="mt-4 flex items-center gap-3 rounded-2xl border border-line p-3">
+      <img id="shareArt" class="h-12 w-12 rounded-xl border border-line object-cover" alt="">
       <div class="min-w-0">
-        <p id="shareTitle" class="truncate text-sm font-medium"></p>
+        <p id="shareTitle" class="truncate text-sm font-semibold"></p>
         <p id="shareArtist" class="truncate text-sm text-muted"></p>
       </div>
     </div>
@@ -411,24 +570,59 @@
       <button class="target" data-share="More"><span class="target-ic" data-i="more"></span>More</button>
     </div>
     <div class="mt-4 flex gap-2">
-      <input id="shareLink" readonly aria-label="Clip link" class="mono min-w-0 flex-1 rounded-md border border-line bg-surface px-3 text-base" style="min-height:44px">
+      <input id="shareLink" readonly aria-label="Clip link" class="mono min-w-0 flex-1 rounded-full border border-line bg-surface px-4 text-base" style="min-height:44px">
       <button id="copyBtn" class="btn">Copy</button>
     </div>
     <p class="mt-3 text-xs text-muted">Demo only. Nothing is sent anywhere.</p>
   </div>
 </dialog>
 
-<!-- About -->
-<dialog id="aboutDlg" aria-labelledby="aboutHeading">
+<!-- Settings -->
+<dialog id="settingsDlg" aria-labelledby="settingsHeading">
   <div class="p-5">
     <div class="flex items-center justify-between">
-      <h2 id="aboutHeading" class="text-base font-semibold tracking-tight">About snip.fm</h2>
+      <h2 id="settingsHeading" class="round text-base font-bold tracking-tight">Settings</h2>
       <button class="icon-btn -mr-2" data-close aria-label="Close" data-i="x"></button>
     </div>
-    <p class="mt-3 text-sm leading-relaxed text-muted">A tiny music discovery feed. Scroll, hear 30 seconds, heart or save what sticks.</p>
-    <h3 class="mt-5 text-sm font-medium">Where the clips come from</h3>
-    <p class="mt-1 text-sm leading-relaxed text-muted">This build plays 30-second previews and artwork from Apple's iTunes Search API, so it runs with no keys. The iHeartRadio source is a drop-in provider in the code.</p>
-    <h3 class="mt-5 text-sm font-medium">Keyboard</h3>
+
+    <p class="set-h">Appearance</p>
+    <div class="seg" role="group" aria-label="Theme">
+      <button class="seg-btn" data-theme="system">System</button>
+      <button class="seg-btn" data-theme="light">Light</button>
+      <button class="seg-btn" data-theme="dark">Dark</button>
+    </div>
+
+    <p class="set-h">Feedback</p>
+    <label class="row" for="setHaptics">
+      <span><span class="row-t">Haptics</span><span class="row-s">Vibrate on likes, saves and skips</span></span>
+      <input type="checkbox" id="setHaptics" class="sw">
+    </label>
+    <label class="row" for="setSfx">
+      <span><span class="row-t">Sound effects</span><span class="row-s">Tiny pops when you take an action</span></span>
+      <input type="checkbox" id="setSfx" class="sw">
+    </label>
+    <label class="row" for="setCelebrate">
+      <span><span class="row-t">Celebrations</span><span class="row-s">Confetti bursts and XP popups</span></span>
+      <input type="checkbox" id="setCelebrate" class="sw">
+    </label>
+
+    <p class="set-h">Your stats</p>
+    <div class="stat-grid">
+      <div class="stat-card"><p class="stat-num" id="sLevel">1</p><p class="stat-lab">Level</p></div>
+      <div class="stat-card"><p class="stat-num" id="sHeard">0</p><p class="stat-lab">Clips heard</p></div>
+      <div class="stat-card"><p class="stat-num" id="sStreak">0</p><p class="stat-lab">Day streak</p></div>
+      <div class="stat-card"><p class="stat-num" id="sLikes">0</p><p class="stat-lab">Likes</p></div>
+      <div class="stat-card"><p class="stat-num" id="sSaves">0</p><p class="stat-lab">Saved</p></div>
+      <div class="stat-card"><p class="stat-num" id="sMins">0</p><p class="stat-lab">Minutes</p></div>
+    </div>
+
+    <p class="set-h">Data</p>
+    <button id="resetBtn" class="btn w-full !border-accent !text-accent">Reset everything</button>
+    <p class="mt-2 text-xs text-muted">Wipes likes, saves, stats and settings from this browser.</p>
+
+    <p class="set-h">About</p>
+    <p class="text-sm leading-relaxed text-muted">A tiny music discovery feed. Scroll, hear 30 seconds, heart or save what sticks. Clips and artwork come from Apple's iTunes Search API — no keys needed. Everything stays in this browser; like counts and sharing are demo only.</p>
+    <h3 class="mt-4 text-sm font-semibold">Keyboard</h3>
     <ul class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted">
       <li><span class="kbd">J</span> <span class="kbd">↓</span> next</li>
       <li><span class="kbd">K</span> <span class="kbd">↑</span> previous</li>
@@ -436,13 +630,12 @@
       <li><span class="kbd">M</span> mute</li>
       <li><span class="kbd">L</span> like</li>
       <li><span class="kbd">S</span> save</li>
+      <li><span class="kbd">/</span> search</li>
     </ul>
-    <p class="mt-5 text-xs leading-relaxed text-muted">Likes and saves stay in this browser. Like counts and sharing are demo only.</p>
   </div>
 </dialog>
 
 <div id="toasts" role="status" aria-live="polite"></div>
-
 <script>
 (() => {
 'use strict';
@@ -464,6 +657,95 @@ const store = {
   set(k, v) { this.mem[k] = v; try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
 };
 
+/* =====================================================================
+   Prefs, stats, gamification
+   ===================================================================== */
+const prefs = Object.assign({ theme: 'system', haptics: true, sfx: true, celebrate: true }, store.get('snip:prefs', {}));
+const savePrefs = () => store.set('snip:prefs', prefs);
+const stats = Object.assign({ xp: 0, heard: 0, seconds: 0, genres: {}, streak: 0, best: 0, lastDay: null }, store.get('snip:stats', {}));
+const saveStats = () => store.set('snip:stats', stats);
+
+const levelInfo = xp => {
+  let lvl = 1, need = 100, acc = 0;
+  while (xp >= acc + need) { acc += need; lvl++; need = Math.round(need * 1.35); }
+  return { lvl, into: xp - acc, need, pct: Math.min(1, (xp - acc) / need) };
+};
+const LEVEL_EMOJI = ['🎧', '🎸', '🎹', '🥁', '🎤', '🎷', '🎺', '🪩', '👑'];
+const PALETTE = ['#EA4335', '#4285F4', '#FBBC04', '#34A853', '#A142F4', '#FF6D00', '#00BCD4'];
+const GENRE_COLORS = { 'Pop': '#EA4335', 'Hip-hop': '#4285F4', 'Country': '#F4B400', 'Rock': '#34A853', 'R&B': '#A142F4', 'Latin': '#FF6D00', 'Dance': '#00BCD4' };
+const GENRE_EMOJI = { 'Pop': '🎤', 'Hip-hop': '🎧', 'Country': '🤠', 'Rock': '🎸', 'R&B': '🎹', 'Latin': '💃', 'Dance': '🪩' };
+
+/* Web Vibration API — respects the haptics setting */
+const buzz = p => { if (prefs.haptics && navigator.vibrate) try { navigator.vibrate(p); } catch {} };
+
+/* Tiny WebAudio blips — respects the sound-effects setting */
+let actx = null;
+function blip(name) {
+  if (!prefs.sfx) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    const notes = { like: [523, 784], save: [392, 587], level: [523, 659, 784, 1047], tap: [660], search: [440, 554] }[name] || [660];
+    const t0 = actx.currentTime;
+    notes.forEach((f, i) => {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      const t = t0 + i * .07;
+      g.gain.setValueAtTime(0.001, t);
+      g.gain.exponentialRampToValueAtTime(0.12, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      o.connect(g); g.connect(actx.destination);
+      o.start(t); o.stop(t + 0.2);
+    });
+  } catch {}
+}
+
+function confettiAt(x, y) {
+  if (!prefs.celebrate) return;
+  for (let i = 0; i < 26; i++) {
+    const s = document.createElement('span');
+    s.className = 'cf';
+    s.style.left = x + 'px'; s.style.top = y + 'px';
+    s.style.background = PALETTE[i % PALETTE.length];
+    s.style.setProperty('--dx', (Math.random() * 260 - 130) + 'px');
+    s.style.setProperty('--dy', (Math.random() * -240 - 40) + 'px');
+    s.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+    s.style.animationDelay = (Math.random() * 90) + 'ms';
+    document.body.appendChild(s);
+    s.addEventListener('animationend', () => s.remove());
+  }
+}
+function xpFloat(pt, n) {
+  if (!prefs.celebrate || !pt) return;
+  const s = document.createElement('span');
+  s.className = 'xp-float mono';
+  s.textContent = `+${n} XP`;
+  s.style.left = pt.x + 'px'; s.style.top = pt.y + 'px';
+  document.body.appendChild(s);
+  s.addEventListener('animationend', () => s.remove());
+}
+function gainXp(n, opts = {}) {
+  const before = levelInfo(stats.xp).lvl;
+  stats.xp += n; saveStats();
+  if (opts.pt) xpFloat(opts.pt, n);
+  const after = levelInfo(stats.xp);
+  if (after.lvl > before) {
+    buzz([20, 60, 20, 60, 120]); blip('level');
+    confettiAt(innerWidth / 2, innerHeight * .3);
+    toast(`🎉 Level ${after.lvl} unlocked! New avatar energy.`);
+    renderProfile();
+  }
+}
+function touchStreak() {
+  const day = 864e5, today = new Date().toISOString().slice(0, 10), yest = new Date(Date.now() - day).toISOString().slice(0, 10);
+  if (stats.lastDay === today) return;
+  // first visit today → streak +1 if yesterday was active, else reset to 1
+  stats.streak = stats.lastDay === yest ? stats.streak + 1 : 1;
+  stats.best = Math.max(stats.best || 0, stats.streak);
+  stats.lastDay = today; saveStats();
+  if (stats.streak > 1) toast(`🔥 ${stats.streak}-day streak! Keep it alive.`);
+}
+
 /* Lucide-style icons */
 const I = {
   heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
@@ -480,11 +762,15 @@ const I = {
   x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
   radio: '<path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/>',
-  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
   messageCircle: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
   camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
   mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
-  more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>'
+  more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+  settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  sparkles: '<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>'
 };
 const icon = (n, { fill = false, size = 20, cls = '' } = {}) =>
   `<svg class="${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="${fill ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
@@ -535,25 +821,11 @@ const PROVIDERS = {
       const r = (data.results || [])[0];
       return r && r.previewUrl ? normalizeItunes(r) : null;
     }
-  },
-
-  /* Plug iHeartRadio in here once you have access to a clip source.
-     Keep credentials off the client: add a Vercel Serverless Function
-     (for example /api/clips) that calls iHeartRadio, then fetch it here
-     and return clips in the shape above.
-
-     iheart: {
-       async search(term, { offset = 0, limit = 10 } = {}) {
-         const res = await fetch(`/api/clips?q=${encodeURIComponent(term)}&offset=${offset}&limit=${limit}`);
-         return (await res.json()).clips;
-       },
-       async lookup(id) { const res = await fetch(`/api/clips/${id}`); return res.ok ? res.json() : null; }
-     }
-  */
+  }
 };
 const provider = PROVIDERS.itunes;
 
-/* Stations: each maps to a handful of search terms */
+/* Stations: each maps to a handful of search terms. Select several to mix! */
 const ARTISTS = {
   pop:     ['taylor swift', 'dua lipa', 'olivia rodrigo', 'ariana grande', 'harry styles', 'sabrina carpenter'],
   hiphop:  ['kendrick lamar', 'drake', 'travis scott', 'tyler the creator', 'nicki minaj', 'j cole'],
@@ -569,37 +841,49 @@ const STATIONS = [
   { id: 'latin', label: 'Latin' }, { id: 'dance', label: 'Dance' }
 ];
 const stationLabel = id => (STATIONS.find(s => s.id === id) || STATIONS[0]).label;
-function buildPool(id) {
-  if (id !== 'foryou') return ARTISTS[id].map(term => ({ term, station: stationLabel(id) }));
+
+function buildPool(sel) {
+  const genres = sel.filter(id => id !== 'foryou');
+  if (!genres.length) { // For You: everything, shuffled
+    const out = [];
+    for (let i = 0; i < 6; i++) for (const k of shuffle(Object.keys(ARTISTS))) out.push({ term: ARTISTS[k][i], station: stationLabel(k) });
+    return out;
+  }
   const out = [];
-  for (let i = 0; i < 6; i++) for (const k of shuffle(Object.keys(ARTISTS))) out.push({ term: ARTISTS[k][i], station: stationLabel(k) });
-  return out;
+  for (const g of genres) for (const t of ARTISTS[g]) out.push({ term: t, station: stationLabel(g) });
+  return shuffle(out);
 }
 
 /* =====================================================================
    State
    ===================================================================== */
-const savedStation = store.get('snip:station', 'foryou');
+const savedStations = Array.isArray(store.get('snip:stations', null)) ? store.get('snip:stations') : [store.get('snip:station', 'foryou')];
 const state = {
   view: 'feed', tab: 'saved',
-  station: STATIONS.some(s => s.id === savedStation) ? savedStation : 'foryou',
+  stations: new Set(savedStations.filter(id => id === 'foryou' || ARTISTS[id])),
   clips: [], active: 0, pool: [], cursor: 0, seen: new Set(), token: 0,
   loading: false, done: false, status: 'loading', retryAfter: 0,
-  started: false, userPaused: false, currentId: null, lastFilled: -1, retried: {}, preloaded: null,
+  started: false, userPaused: false, currentId: null, currentClip: null, lastFilled: -1, retried: {}, preloaded: null,
   muted: store.get('snip:muted', false),
   liked: store.get('snip:liked', {}),
-  saved: store.get('snip:saved', {})
+  saved: store.get('snip:saved', {}),
+  searchTerm: '', searchResults: [], searchMap: {}, searching: false,
+  counted: new Set(), lastT: 0
 };
-const findClip = id => state.clips.find(c => c.id === id) || state.saved[id] || state.liked[id];
+if (!state.stations.size) state.stations = new Set(['foryou']);
+
+const findClip = id => state.clips.find(c => c.id === id) || state.saved[id] || state.liked[id] || state.searchMap[id];
 const pick = c => ({ id: c.id, title: c.title, artist: c.artist, album: c.album, art: c.art, audio: c.audio, genre: c.genre, explicit: c.explicit, station: c.station });
 
 /* =====================================================================
    Elements
    ===================================================================== */
-const feed = $('#feed'), viewFeed = $('#viewFeed'), viewSaved = $('#viewSaved');
+const feed = $('#feed'), viewFeed = $('#viewFeed'), viewSearch = $('#viewSearch'), viewProfile = $('#viewProfile');
 const startEl = $('#start'), startBtn = $('#startBtn'), startCopy = $('#startCopy');
 const stationsEl = $('#stations'), toasts = $('#toasts');
-const shareDlg = $('#shareDlg'), aboutDlg = $('#aboutDlg');
+const shareDlg = $('#shareDlg'), settingsDlg = $('#settingsDlg');
+const searchInput = $('#searchInput'), searchClear = $('#searchClear'), searchMeta = $('#searchMeta');
+const searchGrid = $('#searchGrid'), vibesEl = $('#vibes');
 const coarse = matchMedia('(pointer: coarse)').matches;
 const START_COPY = 'Scroll through short clips, heart the ones you love, and save them for later.';
 
@@ -612,7 +896,7 @@ audio.setAttribute('playsinline', '');
 const preloader = new Audio(); preloader.preload = 'auto'; preloader.muted = true;
 
 function playClip(c) {
-  if (state.currentId !== c.id) { state.currentId = c.id; audio.src = c.audio; state.lastFilled = -1; }
+  if (state.currentId !== c.id) { state.currentId = c.id; state.currentClip = c; audio.src = c.audio; state.lastFilled = -1; state.lastT = 0; }
   const p = audio.play();
   if (p && p.catch) p.catch(err => {
     if (err.name === 'NotAllowedError') { state.userPaused = true; paintPlaying(); toast('Tap the artwork to play.'); }
@@ -663,6 +947,19 @@ function onTime() {
     $('.ticks', slide).setAttribute('aria-valuenow', String(Math.round(t)));
   }
   $$(`.tile[data-id="${id}"]`).forEach(el => el.style.setProperty('--pct', (frac * 100) + '%'));
+
+  /* Gamification: count the listen + accrue listening time */
+  const dt = t - state.lastT;
+  if (dt > 0 && dt < 2) stats.seconds += dt;
+  state.lastT = t;
+  if (state.currentClip && t > 4 && !state.counted.has(id)) {
+    state.counted.add(id);
+    stats.heard++;
+    const g = state.currentClip.station || state.currentClip.genre;
+    if (g) stats.genres[g] = (stats.genres[g] || 0) + 1;
+    gainXp(2);
+    touchStreak();
+  }
 }
 function paintPlaying() {
   const playing = !audio.paused && !!state.currentId;
@@ -672,7 +969,6 @@ function paintPlaying() {
   const s = activeSlide();
   if (state.userPaused && s) s.classList.add('user-paused');
 }
-
 /* =====================================================================
    Rendering: feed
    ===================================================================== */
@@ -724,7 +1020,7 @@ const messageSlide = (iconName, title, body, btn) => `
   <article class="slide end">
     <div class="slide-in msg">
       <div class="ring">${icon(iconName, { size: 22 })}</div>
-      <h2 class="text-lg font-semibold tracking-tight">${esc(title)}</h2>
+      <h2 class="round text-lg font-bold tracking-tight">${esc(title)}</h2>
       <p class="max-w-[28ch] text-sm leading-relaxed text-muted">${esc(body)}</p>
       ${btn ? `<button class="btn mt-2" data-act="${btn.act}">${esc(btn.label)}</button>` : ''}
     </div>
@@ -760,7 +1056,7 @@ function activate(i) {
 }
 function go(d) {
   const t = $(`.slide[data-index="${state.active + d}"]`, feed);
-  if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (t) { buzz(8); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 }
 
 /* =====================================================================
@@ -809,30 +1105,46 @@ async function loadMore() {
       } else { toast("Couldn't load more clips."); state.retryAfter = Date.now() + 5000; }
     } else {
       state.done = true;
-      feed.insertAdjacentHTML('beforeend', messageSlide('music', "That's the end of this station", 'Pick another station above, or head back to the top.', { act: 'top', label: 'Back to top' }));
+      feed.insertAdjacentHTML('beforeend', messageSlide('sparkles', "That's the end of this station", 'Pick another vibe above — mix a few! — or head back to the top.', { act: 'top', label: 'Back to top' }));
     }
   } finally {
     if (token === state.token) { state.loading = false; hideTail(); }
   }
 }
 
-function setStation(id) {
-  state.station = id; store.set('snip:station', id);
-  renderStations();
-  audio.pause(); state.currentId = null; state.userPaused = false;
+function setStation() {
+  audio.pause(); state.currentId = null; state.currentClip = null; state.userPaused = false;
   state.token++; state.clips = []; state.seen = new Set(); state.cursor = 0; state.active = 0;
-  state.pool = buildPool(id); state.loading = false; state.done = false; state.status = 'loading'; state.retryAfter = 0;
+  state.pool = buildPool([...state.stations]); state.loading = false; state.done = false; state.status = 'loading'; state.retryAfter = 0;
   io.disconnect(); feed.classList.remove('moved'); feed.innerHTML = skeleton(); feed.scrollTop = 0;
   updateStart(); loadMore();
 }
 
 function renderStations() {
-  stationsEl.innerHTML = STATIONS.map(s => `<button class="chip" data-station="${s.id}" aria-pressed="${s.id === state.station}">${esc(s.label)}</button>`).join('');
+  stationsEl.innerHTML = STATIONS.map(s =>
+    `<button class="chip round" data-station="${s.id}" aria-pressed="${state.stations.has(s.id)}">${esc(s.label)}</button>`
+  ).join('');
 }
 
 /* =====================================================================
-   Like, save, share
+   Like, save, share (with haptics, SFX and XP)
    ===================================================================== */
+function likeClip(id, pt) {
+  const wasOn = !!state.liked[id];
+  toggleLike(id);
+  if (!wasOn && state.liked[id]) {
+    buzz([10, 40, 18]); blip('like');
+    gainXp(5, { pt }); touchStreak();
+  }
+}
+function saveClip(id, pt) {
+  const wasOn = !!state.saved[id];
+  toggleSave(id);
+  if (!wasOn && state.saved[id]) {
+    buzz([12, 50, 12, 50, 30]); blip('save');
+    gainXp(5, { pt }); touchStreak();
+  }
+}
 function paintLike(b, id, animate) {
   const on = !!state.liked[id];
   b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Unlike' : 'Like');
@@ -884,11 +1196,70 @@ function openShare(id) {
 async function copyLink() {
   const v = $('#shareLink').value;
   try { await navigator.clipboard.writeText(v); } catch { const i = $('#shareLink'); i.select(); try { document.execCommand('copy'); } catch {} }
-  toast('Link copied.');
+  buzz(10); toast('Link copied.');
+}
+/* =====================================================================
+   Search view
+   ===================================================================== */
+const VIBES = ['feel good', 'late night drive', 'workout', 'focus', 'heartbreak', 'summer', 'rainy day', 'hype'];
+function renderVibes() {
+  vibesEl.innerHTML = VIBES.map(v => `<button class="chip vibe round" data-vibe="${esc(v)}">${esc(v)}</button>`).join('');
+}
+const searchSk = () => `
+  <div class="tile">
+    <div class="tile-art sk"></div>
+    <div class="sk mt-3" style="height:14px;width:70%"></div>
+    <div class="sk mt-1.5" style="height:12px;width:45%"></div>
+  </div>`;
+function renderSearchEmpty() {
+  searchMeta.hidden = true;
+  vibesEl.hidden = false;
+  searchGrid.innerHTML = `
+    <div class="flex flex-col items-center rounded-3xl border border-dashed border-line px-6 py-14 text-center">
+      <div class="ring">${icon('search', { size: 22 })}</div>
+      <h2 class="round mt-4 text-base font-bold tracking-tight">Search the whole catalog</h2>
+      <p class="mt-1 max-w-[34ch] text-sm leading-relaxed text-muted">Find any song or artist instantly — or tap a vibe above to wander. Each search earns a little XP.</p>
+    </div>`;
+}
+function renderSearch() {
+  if (state.view !== 'search' || !state.searchResults.length) return;
+  searchGrid.innerHTML = `<div class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3">${state.searchResults.map(tileHTML).join('')}</div>`;
+  paintPlaying();
+}
+async function doSearch(term) {
+  term = (term || '').trim();
+  if (!term || state.searching) return;
+  state.searching = true;
+  state.searchTerm = term;
+  searchInput.value = term; searchClear.hidden = false;
+  vibesEl.hidden = true; searchMeta.hidden = false;
+  searchMeta.textContent = `Searching “${term}”…`;
+  searchGrid.innerHTML = `<div class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3">${Array(6).fill(searchSk()).join('')}</div>`;
+  buzz(8);
+  try {
+    const res = await provider.search(term, { limit: 24 });
+    if (state.searchTerm !== term) return;
+    state.searchResults = res;
+    res.forEach(c => { state.searchMap[c.id] = c; });
+    searchMeta.textContent = res.length ? `${res.length} results for “${term}”` : `No results for “${term}” — try another spelling.`;
+    if (res.length) { renderSearch(); blip('search'); gainXp(1); }
+    else searchGrid.innerHTML = `
+      <div class="flex flex-col items-center rounded-3xl border border-dashed border-line px-6 py-14 text-center">
+        <div class="ring">${icon('music', { size: 22 })}</div>
+        <h2 class="round mt-4 text-base font-bold tracking-tight">Nothing found</h2>
+        <p class="mt-1 max-w-[30ch] text-sm text-muted">The catalog came back empty for “${esc(term)}”.</p>
+      </div>`;
+  } catch {
+    if (state.searchTerm !== term) return;
+    searchMeta.textContent = 'Search failed. Check your connection.';
+    searchGrid.innerHTML = `<div class="flex justify-center py-10"><button class="btn" data-act="research">Try again</button></div>`;
+  } finally {
+    if (state.searchTerm === term) state.searching = false;
+  }
 }
 
 /* =====================================================================
-   Saved view
+   Library tiles + Saved grid
    ===================================================================== */
 function tileHTML(c) {
   const isSaved = state.tab === 'saved';
@@ -902,10 +1273,10 @@ function tileHTML(c) {
     </button>
     <div class="mt-3 flex items-start gap-2">
       <div class="min-w-0 flex-1">
-        <p class="truncate text-sm font-medium">${esc(c.title)}</p>
+        <p class="truncate text-sm font-semibold">${esc(c.title)}</p>
         <p class="truncate text-sm text-muted">${esc(c.artist)}</p>
       </div>
-      <button class="icon-btn -mr-2 -mt-2 ${isSaved ? 'text-fg' : 'text-accent'}" data-act="${isSaved ? 'unsave' : 'unlike'}" data-id="${c.id}" aria-label="${isSaved ? 'Remove from saved' : 'Remove like'}">${icon(isSaved ? 'bookmark' : 'heart', { fill: true })}</button>
+      <button class="icon-btn !h-8 !w-8 -mr-2 -mt-1.5 ${isSaved ? 'text-fg' : 'text-accent'}" data-act="${isSaved ? 'unsave' : 'unlike'}" data-id="${c.id}" aria-label="${isSaved ? 'Remove from saved' : 'Remove like'}">${icon(isSaved ? 'bookmark' : 'heart', { fill: true, size: 18 })}</button>
     </div>
   </div>`;
 }
@@ -919,9 +1290,9 @@ function renderSaved() {
   if (!list.length) {
     const saved = state.tab === 'saved';
     grid.innerHTML = `
-      <div class="flex flex-col items-center rounded-xl border border-dashed border-line px-6 py-16 text-center">
+      <div class="flex flex-col items-center rounded-3xl border border-dashed border-line px-6 py-16 text-center">
         <div class="ring">${icon(saved ? 'bookmark' : 'heart', { size: 22 })}</div>
-        <h2 class="mt-4 text-base font-semibold tracking-tight">${saved ? 'Nothing saved yet' : 'No hearts yet'}</h2>
+        <h2 class="round mt-4 text-base font-bold tracking-tight">${saved ? 'Nothing saved yet' : 'No hearts yet'}</h2>
         <p class="mt-1 max-w-[32ch] text-sm leading-relaxed text-muted">${saved ? 'Tap Save on any clip and it lands here, ready for later.' : 'Heart a clip, or double-tap the artwork, to collect it here.'}</p>
         <button class="btn mt-5" data-nav="feed">Find something new</button>
       </div>`;
@@ -930,35 +1301,67 @@ function renderSaved() {
   grid.innerHTML = `<div class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3">${list.map(tileHTML).join('')}</div>`;
   paintPlaying();
 }
+/* =====================================================================
+   Profile render (clean)
+   ===================================================================== */
+function renderProfile() {
+  const li = levelInfo(stats.xp);
+  $('#pAvatar').textContent = LEVEL_EMOJI[Math.min(li.lvl - 1, LEVEL_EMOJI.length - 1)];
+  $('#pLevelBadge').textContent = 'Lvl ' + li.lvl;
+  $('#stHeard').textContent = fmt(stats.heard);
+  $('#stLiked').textContent = fmt(Object.keys(state.liked).length);
+  $('#stSaved').textContent = fmt(Object.keys(state.saved).length);
+  $('#pXpBar').style.width = Math.round(li.pct * 100) + '%';
+  $('#pXpTxt').textContent = `${li.into} / ${li.need} XP`;
+  $('#pXpHint').textContent = `${li.need - li.into} XP to Level ${li.lvl + 1} — listen, like and save to earn it.`;
+  $('#streakNow').textContent = String(stats.streak || 0);
+  $('#streakBest').textContent = String(stats.best || 0);
+  $('#pFlame').classList.toggle('on', (stats.streak || 0) > 0);
+  const entries = Object.entries(stats.genres || {}).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  $('#genreDots').innerHTML = entries.length ? entries.map(([g, n]) => {
+    const c = GENRE_COLORS[g] || PALETTE[(g.length + g.charCodeAt(0)) % PALETTE.length];
+    return `<div class="gdot">
+      <span class="gdot-ring" style="--gc:${c}"><span class="gdot-in">${GENRE_EMOJI[g] || '🎵'}</span></span>
+      <p class="mt-2 truncate text-center text-xs font-semibold">${esc(g)}</p>
+      <p class="text-center text-[11px] text-muted">${n} heard</p>
+    </div>`;
+  }).join('') : `<p class="text-sm text-muted">Listen to a few clips and your top genres will show up here.</p>`;
+  updateCounts();
+}
 function playTile(id) {
-  const c = state.saved[id] || state.liked[id]; if (!c) return;
+  const c = findClip(id); if (!c) return;
   if (state.currentId === id) { audio.paused ? audio.play().catch(() => {}) : audio.pause(); }
   else playClip(c);
 }
 
 /* =====================================================================
-   Views, theme, mute, toasts
+   Views, theme, mute, toasts, settings
    ===================================================================== */
 function paintNav() { $$('.navtab, .bnav').forEach(n => n.dataset.nav === state.view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current')); }
 function showView(v) {
-  if (v === state.view) return;
+  if (v === state.view) { if (v === 'search') searchInput.focus(); return; }
   state.view = v;
-  viewFeed.hidden = v !== 'feed'; viewSaved.hidden = v !== 'saved';
+  viewFeed.hidden = v !== 'feed'; viewSearch.hidden = v !== 'search'; viewProfile.hidden = v !== 'profile';
   paintNav();
   if (v === 'feed') {
     feed.scrollTop = state.active * feed.clientHeight;
     state.userPaused = false;
     if (state.started) activate(state.active); else audio.pause();
   } else {
-    audio.pause(); renderSaved(); viewSaved.scrollTop = 0;
+    audio.pause();
+    if (v === 'search') { if (!state.searchTerm && !state.searchResults.length) renderSearchEmpty(); setTimeout(() => searchInput.focus(), 60); }
+    if (v === 'profile') { renderProfile(); renderSaved(); viewProfile.scrollTop = 0; }
   }
 }
-function applyTheme(dark, persist) {
+
+const systemDark = () => matchMedia('(prefers-color-scheme: dark)').matches;
+function applyTheme() {
+  const dark = prefs.theme === 'dark' || (prefs.theme === 'system' && systemDark());
   document.documentElement.classList.toggle('dark', dark);
   $('#themeColor').content = dark ? '#000000' : '#ffffff';
-  $('#themeBtn').innerHTML = icon(dark ? 'sun' : 'moon');
-  if (persist) store.set('snip:theme', dark ? 'dark' : 'light');
 }
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (prefs.theme === 'system') applyTheme(); }); } catch {}
+
 function paintMute() {
   audio.muted = state.muted;
   const b = $('#muteBtn');
@@ -972,23 +1375,52 @@ function toast(msg) {
   setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 220); }, 2400);
 }
 
+function paintSettings() {
+  $$('.seg-btn[data-theme]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.theme === prefs.theme)));
+  $('#setHaptics').checked = !!prefs.haptics;
+  $('#setSfx').checked = !!prefs.sfx;
+  $('#setCelebrate').checked = !!prefs.celebrate;
+  const li = levelInfo(stats.xp);
+  $('#sLevel').textContent = li.lvl;
+  $('#sHeard').textContent = fmt(stats.heard);
+  $('#sStreak').textContent = stats.streak || 0;
+  $('#sLikes').textContent = Object.keys(state.liked).length;
+  $('#sSaves').textContent = Object.keys(state.saved).length;
+  $('#sMins').textContent = fmt(Math.round(stats.seconds / 60));
+}
 /* =====================================================================
    Events
    ===================================================================== */
 document.addEventListener('click', e => {
   const nav = e.target.closest('[data-nav]'); if (nav) return showView(nav.dataset.nav);
+  const vibe = e.target.closest('[data-vibe]'); if (vibe) { searchInput.value = vibe.dataset.vibe; return doSearch(vibe.dataset.vibe); }
   const tab = e.target.closest('[data-tab]'); if (tab) { state.tab = tab.dataset.tab; return renderSaved(); }
   const a = e.target.closest('[data-act]'); if (!a) return;
   const id = a.dataset.id;
   switch (a.dataset.act) {
-    case 'like': toggleLike(id); break;
-    case 'save': toggleSave(id); break;
-    case 'share': openShare(id); break;
-    case 'tile': playTile(id); break;
-    case 'unsave': if (state.currentId === id) audio.pause(); toggleSave(id); renderSaved(); break;
-    case 'unlike': if (state.currentId === id) audio.pause(); toggleLike(id, false); renderSaved(); break;
-    case 'retry': setStation(state.station); break;
+    case 'like': {
+      const r = a.getBoundingClientRect();
+      likeClip(id, { x: r.left + r.width / 2, y: r.top });
+      break;
+    }
+    case 'save': {
+      const r = a.getBoundingClientRect();
+      saveClip(id, { x: r.left + r.width / 2, y: r.top });
+      break;
+    }
+    case 'share': {
+      const r = a.getBoundingClientRect();
+      openShare(id);
+      buzz(10); blip('tap');
+      gainXp(3, { pt: { x: r.left + r.width / 2, y: r.top } });
+      break;
+    }
+    case 'tile': playTile(id); buzz(10); break;
+    case 'unsave': if (state.currentId === id) audio.pause(); toggleSave(id); renderSaved(); renderSearch(); renderProfile(); break;
+    case 'unlike': if (state.currentId === id) audio.pause(); toggleLike(id, false); renderSaved(); renderSearch(); renderProfile(); break;
+    case 'retry': setStation(); break;
     case 'top': feed.scrollTo({ top: 0, behavior: 'smooth' }); break;
+    case 'research': doSearch(state.searchTerm || searchInput.value); break;
   }
 });
 
@@ -999,13 +1431,14 @@ feed.addEventListener('click', e => {
   const id = art.closest('.slide').dataset.id, now = Date.now();
   if (now - lastTap < 300) {
     clearTimeout(tapTimer); lastTap = 0; burst(art, e);
-    if (!state.liked[id]) toggleLike(id);
+    if (!state.liked[id]) likeClip(id, e.clientX ? { x: e.clientX, y: e.clientY } : null);
   } else {
     lastTap = now; tapTimer = setTimeout(togglePlay, 260);
   }
 });
 feed.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.classList.add('broken'); }, true);
 $('#savedGrid').addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.classList.add('broken'); }, true);
+searchGrid.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.classList.add('broken'); }, true);
 
 /* Seek by tapping or dragging the ticks */
 let drag = null;
@@ -1027,59 +1460,115 @@ addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey || $('dialog[open]')) return;
   const tag = e.target.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  const k = e.key.toLowerCase();
+  if (k === '/') { e.preventDefault(); return showView('search'); }
   if (state.view !== 'feed' || !state.started) return;
   if (e.target.closest && e.target.closest('.ticks') && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return;
-  const k = e.key.toLowerCase(), c = state.clips[state.active];
+  const c = state.clips[state.active];
   if ((k === ' ' || k === 'enter') && tag === 'BUTTON') return;
+  const artPt = () => { const el = activeSlide()?.querySelector('.art'); const r = el?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + 40 } : null; };
   switch (k) {
     case 'arrowdown': case 'j': e.preventDefault(); go(1); break;
     case 'arrowup': case 'k': e.preventDefault(); go(-1); break;
     case ' ': e.preventDefault(); togglePlay(); break;
-    case 'l': if (c) toggleLike(c.id); break;
-    case 's': if (c) toggleSave(c.id); break;
-    case 'm': state.muted = !state.muted; store.set('snip:muted', state.muted); paintMute(); break;
+    case 'l': if (c) likeClip(c.id, artPt()); break;
+    case 's': if (c) saveClip(c.id, artPt()); break;
+    case 'm': state.muted = !state.muted; store.set('snip:muted', state.muted); paintMute(); buzz(10); break;
   }
 });
 
+/* Stations: multi-select genre mixing */
 stationsEl.addEventListener('click', e => {
-  const b = e.target.closest('[data-station]'); if (!b || b.dataset.station === state.station) return;
-  setStation(b.dataset.station);
-  const nb = $(`[data-station="${b.dataset.station}"]`, stationsEl); if (nb) nb.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+  const b = e.target.closest('[data-station]'); if (!b) return;
+  const id = b.dataset.station;
+  const sel = new Set(state.stations);
+  if (id === 'foryou') {
+    if (sel.size === 1 && sel.has('foryou')) return;
+    sel.clear(); sel.add('foryou');
+  } else {
+    sel.delete('foryou');
+    sel.has(id) ? sel.delete(id) : sel.add(id);
+    if (!sel.size) sel.add('foryou');
+  }
+  state.stations = sel;
+  store.set('snip:stations', [...sel]);
+  renderStations();
+  const nb = $(`[data-station="${id}"]`, stationsEl);
+  if (nb) {
+    nb.classList.add('wiggle');
+    setTimeout(() => nb.classList.remove('wiggle'), 500);
+    nb.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+  }
+  buzz(sel.size > 1 ? [12, 30, 12] : 12); blip('tap');
+  setStation();
+});
+
+/* Search events */
+$('#searchForm').addEventListener('submit', e => { e.preventDefault(); doSearch(searchInput.value); });
+let searchTimer = null;
+searchInput.addEventListener('input', () => {
+  searchClear.hidden = !searchInput.value;
+  clearTimeout(searchTimer);
+  const v = searchInput.value.trim();
+  if (v.length >= 2) searchTimer = setTimeout(() => doSearch(v), 500);
+});
+searchClear.addEventListener('click', () => {
+  clearTimeout(searchTimer);
+  searchInput.value = ''; searchClear.hidden = true;
+  state.searchTerm = ''; state.searchResults = [];
+  searchMeta.hidden = true; vibesEl.hidden = false;
+  renderSearchEmpty();
+  searchInput.focus();
 });
 
 startBtn.addEventListener('click', () => {
-  if (state.status === 'error') return setStation(state.station);
+  if (state.status === 'error') return setStation();
   if (state.status !== 'ready') return;
   state.started = true; startEl.hidden = true;
+  buzz([15, 40, 15]); blip('tap');
   activate(state.active); // plays inside the tap, which unlocks audio on mobile
 });
 
 $('#prevBtn').addEventListener('click', () => go(-1));
 $('#nextBtn').addEventListener('click', () => go(1));
-$('#muteBtn').addEventListener('click', () => { state.muted = !state.muted; store.set('snip:muted', state.muted); paintMute(); });
-$('#themeBtn').addEventListener('click', () => applyTheme(!document.documentElement.classList.contains('dark'), true));
-$('#aboutBtn').addEventListener('click', () => aboutDlg.showModal());
+$('#muteBtn').addEventListener('click', () => { state.muted = !state.muted; store.set('snip:muted', state.muted); paintMute(); buzz(10); });
+$('#settingsBtn').addEventListener('click', () => { paintSettings(); settingsDlg.showModal(); buzz(10); });
 $('#copyBtn').addEventListener('click', copyLink);
 
-[shareDlg, aboutDlg].forEach(d => d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) d.close(); }));
+[settingsDlg, shareDlg].forEach(d => d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) d.close(); }));
 shareDlg.addEventListener('click', e => {
   const t = e.target.closest('[data-share]'); if (!t) return;
   toast(`Shared to ${t.dataset.share} (demo).`); shareDlg.close();
 });
 
+/* Settings interactions */
+$$('.seg-btn[data-theme]').forEach(b => b.addEventListener('click', () => {
+  prefs.theme = b.dataset.theme; savePrefs(); applyTheme(); paintSettings(); buzz(10);
+}));
+$('#setHaptics').addEventListener('change', e => { prefs.haptics = e.target.checked; savePrefs(); buzz(20); });
+$('#setSfx').addEventListener('change', e => { prefs.sfx = e.target.checked; savePrefs(); blip('tap'); });
+$('#setCelebrate').addEventListener('change', e => { prefs.celebrate = e.target.checked; savePrefs(); if (prefs.celebrate) confettiAt(innerWidth / 2, innerHeight / 3); });
+$('#resetBtn').addEventListener('click', () => {
+  if (!confirm('Reset likes, saves, stats and settings?')) return;
+  try { Object.keys(localStorage).filter(k => k.startsWith('snip:')).forEach(k => localStorage.removeItem(k)); } catch {}
+  location.reload();
+});
+
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) audio.pause();
+  if (document.hidden) { audio.pause(); saveStats(); }
   else if (state.view === 'feed' && state.started && !state.userPaused && state.currentId) audio.play().catch(() => {});
 });
+addEventListener('pagehide', saveStats);
+setInterval(saveStats, 10000);
 
 /* =====================================================================
    Boot
    ===================================================================== */
 async function init() {
   $$('[data-i]').forEach(el => { el.innerHTML = icon(el.dataset.i, { size: +el.dataset.s || 20 }); });
-  applyTheme(document.documentElement.classList.contains('dark'), false);
-  paintMute(); renderStations(); paintNav(); updateCounts(); updateStart();
-  state.pool = buildPool(state.station);
+  applyTheme();
+  paintMute(); renderStations(); renderVibes(); renderSearchEmpty(); paintNav(); renderProfile(); renderSaved(); updateCounts(); updateStart();
+  state.pool = buildPool([...state.stations]);
   feed.innerHTML = skeleton();
 
   // Shared link: #clip=<id> puts that clip first
