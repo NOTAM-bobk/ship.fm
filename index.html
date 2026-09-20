@@ -6,6 +6,12 @@
 <title>snip.fm: 30-second music clips</title>
 <meta name="description" content="Scroll 30-second clips, mix your favorite genres, search the catalog, and level up your taste.">
 <meta name="theme-color" content="#ffffff" id="themeColor">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="snip.fm">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23000'/%3E%3Cg fill='%23fff'%3E%3Crect x='4.75' y='9' width='2.5' height='6' rx='1'/%3E%3Crect x='8.75' y='6' width='2.5' height='12' rx='1'/%3E%3Crect x='12.75' y='7.5' width='2.5' height='9' rx='1'/%3E%3Crect x='16.75' y='9.5' width='2.5' height='5' rx='1'/%3E%3C/g%3E%3C/svg%3E">
 
 <!-- Apply the saved theme before first paint so there is no flash -->
@@ -519,6 +525,33 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
   }
+  /* ---------- Return-visit loops: daily goal, recap, freeze ---------- */
+  .goal-wrap { position: relative; width: 86px; height: 86px; flex: none; }
+  .goal-svg { width: 86px; height: 86px; transform: rotate(-90deg); }
+  .goal-bg { fill: none; stroke: var(--surface-2); stroke-width: 8; }
+  .goal-fg { fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset .7s var(--spring); }
+  .goal-mid { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+  .goal-mid b { font-size: 19px; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+  .goal-mid span { font-size: 10px; font-weight: 700; color: var(--muted); }
+  .crumb-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .tag-mini {
+    display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--muted);
+    font-size: 11px; font-weight: 700; white-space: nowrap;
+  }
+  .bio { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .stat-grid.sm { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .stat-grid.sm .stat-num { font-size: 16px; }
+  .stat-grid.sm .stat-lab { font-size: 10px; }
+  .recap-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 0; text-align: left; }
+  .recap-row + .recap-row { border-top: 1px solid var(--line); }
+  .recap-rank { flex: none; width: 20px; font: 800 13px ui-monospace, monospace; color: var(--muted); }
+  .recap-art { flex: none; width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--line); object-fit: cover; background: var(--surface-2); }
+  .gbar { display: flex; flex-direction: column; gap: 8px; }
+  .gbar-row { display: grid; grid-template-columns: 82px 1fr 30px; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; }
+  .gbar-track { height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .gbar-fill { height: 100%; border-radius: 999px; transition: width .5s var(--spring); }
+  #profBio { resize: vertical; min-height: 84px; }
 </style>
 </head>
 <body class="bg-bg text-fg antialiased">
@@ -622,8 +655,11 @@
           </div>
         </div>
         <div class="mt-4">
-          <p class="round text-lg font-bold tracking-tight"><span id="pName">you</span> <span class="badge" id="pLevelBadge">Lvl 1</span></p>
-          <p class="text-sm text-muted">30 seconds at a time 🎧</p>
+          <div class="crumb-head">
+            <p class="round text-lg font-bold tracking-tight"><span id="pName">you</span> <span class="badge" id="pLevelBadge">Lvl 1</span></p>
+            <button id="pEditBtn" class="btn !min-h-9 px-4 text-[13px]">Edit profile</button>
+          </div>
+          <p id="pBio" class="bio mt-1 text-sm text-muted">30 seconds at a time 🎧</p>
         </div>
 
         <div class="card mt-5">
@@ -636,17 +672,44 @@
         </div>
 
         <div class="card mt-3 flex items-center gap-4">
+          <div class="goal-wrap" role="img" id="goalWrap" aria-label="Today's listening goal">
+            <svg class="goal-svg" viewBox="0 0 86 86" aria-hidden="true">
+              <circle class="goal-bg" cx="43" cy="43" r="36"></circle>
+              <circle class="goal-fg" id="goalRing" cx="43" cy="43" r="36" stroke-dasharray="226.2" stroke-dashoffset="226.2"></circle>
+            </svg>
+            <div class="goal-mid"><span><b id="goalPct" class="mono">0%</b><br><span id="goalTxt">0/10 min</span></span></div>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold">Today's listening goal</p>
+            <p class="mt-0.5 text-xs text-muted" id="goalHint">Listen a few minutes to keep the fire going.</p>
+            <p class="mt-2 text-xs font-semibold" id="goalDone" hidden>🎉 Goal reached today</p>
+          </div>
+        </div>
+
+        <div class="card mt-3 flex items-center gap-4">
           <div class="flame" id="pFlame">🔥</div>
           <div class="min-w-0 flex-1">
             <p class="text-sm font-semibold"><span id="streakNow" class="mono">0</span>-day listening streak</p>
             <p class="mt-0.5 text-xs text-muted">Come back tomorrow to keep it alive · best: <span id="streakBest" class="mono">0</span></p>
+            <p class="mt-2 text-xs font-semibold" id="freezeTag" hidden>🧊 <span id="freezeCount" class="mono">0</span> streak freeze ready</p>
           </div>
+        </div>
+
+        <div class="card mt-3">
+          <div class="crumb-head">
+            <span class="flex items-center gap-2 text-sm font-semibold"><span class="text-accent" data-i="calendar" data-s="16"></span>This week</span>
+            <button id="recapBtn" class="btn !min-h-9 px-4 text-[13px]">Weekly recap</button>
+          </div>
+          <p class="mt-1 text-xs text-muted" id="weekLine">Nothing tracked yet this week — play a clip to start.</p>
         </div>
 
         <div class="mt-6">
           <div class="flex items-baseline justify-between gap-3">
             <h2 class="round text-sm font-bold tracking-tight">Your vibe mix</h2>
-            <span class="text-xs text-muted">🎧 <span id="pFinished" class="mono">0</span> finished</span>
+            <span class="flex items-center gap-2">
+              <span class="text-xs text-muted">🎧 <span id="pFinished" class="mono">0</span> finished</span>
+              <button id="mixPlay" class="btn !min-h-9 px-3 text-[13px]">Play</button>
+            </span>
           </div>
           <div id="genreDots" class="no-sb mt-3 flex gap-5 overflow-x-auto pb-1"></div>
         </div>
@@ -769,6 +832,21 @@
       </span>
     </div>
 
+    <p class="set-h">Habits</p>
+    <p class="row-t mb-2">Daily listening goal</p>
+    <div class="seg" role="group" aria-label="Daily listening goal">
+      <button class="seg-btn" data-goal="5">5m</button>
+      <button class="seg-btn" data-goal="10">10m</button>
+      <button class="seg-btn" data-goal="20">20m</button>
+      <button class="seg-btn" data-goal="30">30m</button>
+    </div>
+    <button id="recapBtn2" class="btn mt-3 w-full">Open weekly recap</button>
+
+    <p class="set-h">App</p>
+    <button id="installBtn" class="btn w-full" hidden><span data-i="download" data-s="16"></span><span>Install snip.fm</span></button>
+    <p id="installHint" class="mt-2 text-xs text-muted">Offline clips, playlists and a home-screen icon.</p>
+    <p id="pwaState" class="mt-1 text-xs text-muted"></p>
+
     <p class="set-h">Your stats</p>
     <div class="stat-grid">
       <div class="stat-card"><p class="stat-num" id="sLevel">1</p><p class="stat-lab">Level</p></div>
@@ -832,6 +910,53 @@
   </div>
 </dialog>
 
+<!-- Weekly recap -->
+<dialog id="recapDlg" aria-labelledby="recapHeading">
+  <div class="p-5">
+    <div class="flex items-center justify-between">
+      <h2 id="recapHeading" class="round text-base font-bold tracking-tight">Your week in music</h2>
+      <button class="icon-btn -mr-2" data-close aria-label="Close" data-i="x"></button>
+    </div>
+    <div id="recapBody" class="mt-4"></div>
+  </div>
+</dialog>
+
+<!-- Edit profile (username and password are not editable) -->
+<dialog id="profDlg" aria-labelledby="profHeading">
+  <div class="p-5">
+    <div class="flex items-center justify-between">
+      <h2 id="profHeading" class="round text-base font-bold tracking-tight">Edit profile</h2>
+      <button class="icon-btn -mr-2" data-close aria-label="Close" data-i="x"></button>
+    </div>
+
+    <p class="row-t mt-4">Username</p>
+    <div class="mt-2 flex items-center gap-3 rounded-2xl border border-line bg-surface px-4" style="min-height:48px">
+      <span id="profUser" class="min-w-0 flex-1 truncate text-sm font-semibold">you</span>
+      <span class="tag-mini">🔒 locked</span>
+    </div>
+    <p class="mt-1 text-xs text-muted">Usernames and passwords can't be changed here.</p>
+
+    <p class="row-t mt-5">Profile picture</p>
+    <div class="mt-2 flex items-center gap-4">
+      <span class="avatar-ring" style="padding:3px"><span class="avatar" id="profAvPreview" style="width:64px;height:64px;font-size:26px">🎧</span></span>
+      <span class="min-w-0 flex-1">
+        <label class="btn w-full" for="profPhoto"><span data-i="camera" data-s="16"></span><span>Upload photo</span></label>
+        <input id="profPhoto" type="file" accept="image/*" class="hidden">
+      </span>
+    </div>
+    <div id="profEmoji" class="mt-3 flex flex-wrap gap-2"></div>
+
+    <p class="row-t mt-5">Bio</p>
+    <textarea id="profBio" maxlength="140" rows="3" placeholder="What are you into right now?" aria-label="Profile bio" class="mt-2 w-full rounded-2xl border border-line bg-surface px-4 py-3 text-base"></textarea>
+    <p class="mt-1 text-right text-xs text-muted"><span id="profBioCount" class="mono">0</span>/140</p>
+
+    <p class="row-t mt-4">Music tastes</p>
+    <div id="profTastes" class="mt-2 flex flex-wrap gap-2"></div>
+
+    <button id="profSave" class="btn-primary round mt-5 w-full">Save profile</button>
+  </div>
+</dialog>
+
 <div id="toasts" role="status" aria-live="polite"></div>
 <script>
 (() => {
@@ -854,13 +979,60 @@ const store = {
   set(k, v) { this.mem[k] = v; try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
 };
 
+/* Tailwind's `.hidden` class outranks the `hidden` attribute — always toggle both. */
+const overlay = (el, on) => { el.hidden = !on; el.classList.toggle('hidden', !on); };
+
 /* =====================================================================
    Prefs, stats, gamification
    ===================================================================== */
-const prefs = Object.assign({ theme: 'system', haptics: true, sfx: true, celebrate: true, muted: false, volume: 0.85, auto: false, lyrics: true }, store.get('snip:prefs', {}));
+const prefs = Object.assign({ theme: 'system', haptics: true, sfx: true, celebrate: true, muted: false, volume: 0.85, auto: false, lyrics: true, goalMin: 10 }, store.get('snip:prefs', {}));
 const savePrefs = () => store.set('snip:prefs', prefs);
-const stats = Object.assign({ xp: 0, heard: 0, finished: 0, seconds: 0, genres: {}, streak: 0, best: 0, lastDay: null }, store.get('snip:stats', {}));
+const stats = Object.assign({
+  xp: 0, heard: 0, finished: 0, seconds: 0, genres: {}, streak: 0, best: 0, lastDay: null,
+  freezes: 0, goalDays: 0, today: null, week: null, pendingRecap: null, recapSeen: null
+}, store.get('snip:stats', {}));
 const saveStats = () => store.set('snip:stats', stats);
+
+/* ---------- Daily + weekly buckets: what makes people come back ---------- */
+const dayKey = (d = new Date()) => new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+function weekKey(d = new Date()) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+  const y = new Date(Date.UTC(t.getUTCFullYear(), 0, 4));
+  const w = 1 + Math.round(((t - y) / 864e5 - 3 + (y.getUTCDay() + 6) % 7) / 7);
+  return t.getUTCFullYear() + '-W' + String(w).padStart(2, '0');
+}
+const emptyDay = () => ({ day: dayKey(), seconds: 0, clips: 0, finished: 0, hitGoal: false });
+const emptyWeek = () => ({ key: weekKey(), seconds: 0, clips: 0, finished: 0, clipsMap: {}, genres: {}, days: [] });
+function rollPeriods() {
+  if (!stats.today || stats.today.day !== dayKey()) stats.today = emptyDay();
+  if (!stats.week || stats.week.key !== weekKey()) {
+    const old = stats.week;
+    if (old && ((old.clips || 0) > 0 || (old.seconds || 0) > 120) && !stats.recapSeen) stats.pendingRecap = old;
+    stats.week = emptyWeek();
+  }
+  if (!stats.week.clipsMap) stats.week.clipsMap = {};
+  if (!stats.week.genres) stats.week.genres = {};
+  if (!Array.isArray(stats.week.days)) stats.week.days = [];
+}
+const bumpWeekClip = c => {
+  const m = stats.week.clipsMap;
+  const e = m[c.id] || (m[c.id] = { ...pick(c), n: 0, at: 0 });
+  e.n++; e.at = Date.now();
+};
+function trackListen(dt) {
+  rollPeriods();
+  stats.today.seconds += dt; stats.week.seconds += dt;
+  const goal = Math.max(1, prefs.goalMin || 10) * 60;
+  if (!stats.today.hitGoal && stats.today.seconds >= goal) {
+    stats.today.hitGoal = true;
+    stats.goalDays = (stats.goalDays || 0) + 1;
+    gainXp(5);
+    blip('level'); confettiAt(innerWidth / 2, innerHeight * .32);
+    toast('🎯 Daily goal hit — ' + (prefs.goalMin || 10) + ' minutes in. +5 XP');
+    if (state.view === 'profile') paintGoal();
+  }
+}
 
 /* XP can only be earned once per clip per action — no like/unlike farming */
 const awarded = store.get('snip:awarded', {});
@@ -960,13 +1132,22 @@ function gainXp(n, opts = {}) {
   }
 }
 function touchStreak() {
-  const day = 864e5, today = new Date().toISOString().slice(0, 10), yest = new Date(Date.now() - day).toISOString().slice(0, 10);
+  const day = 864e5;
+  const today = dayKey(), yest = dayKey(new Date(Date.now() - day));
   if (stats.lastDay === today) return;
-  // first visit today → streak +1 if yesterday was active, else reset to 1
-  stats.streak = stats.lastDay === yest ? stats.streak + 1 : 1;
+  const missed = !!stats.lastDay && stats.lastDay !== yest;
+  if (stats.lastDay === yest) stats.streak = (stats.streak || 0) + 1;
+  else if (missed && (stats.freezes || 0) > 0 && (stats.streak || 0) > 0) {
+    stats.freezes--; stats.streak = (stats.streak || 0) + 1;
+    toast('🧊 Streak freeze used — your ' + stats.streak + '-day run survives.');
+  } else stats.streak = 1;
   stats.best = Math.max(stats.best || 0, stats.streak);
   stats.lastDay = today; saveStats();
   if (stats.streak > 1) toast(`🔥 ${stats.streak}-day streak! Keep it alive.`);
+  if (stats.streak > 0 && stats.streak % 7 === 0 && (stats.freezes || 0) < 3) {
+    stats.freezes = (stats.freezes || 0) + 1; saveStats();
+    toast('🧊 A week strong — streak freeze earned.');
+  }
 }
 /* Hearing a full 30-second clip is the big XP moment */
 const artPoint = () => {
@@ -981,7 +1162,10 @@ function finishSong(id, dur) {
   if ((state.playedId !== id ? 0 : state.playT) < need) return;
   state.finished.add(id);
   stats.finished = (stats.finished || 0) + 1;
+  rollPeriods();
+  stats.today.finished++; stats.week.finished++;
   saveStats();
+  if (state.view === 'profile') paintGoal();
   gainXp(10, { pt: artPoint() });
   if (state.view === 'profile') renderProfile();
   if (!state.finishToasted) {
@@ -1020,6 +1204,8 @@ const I = {
   trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
   mic: '<path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="18" y2="22"/>',
   shuffle: '<path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/>',
+  calendar: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
   sparkles: '<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>'
 };
 const icon = (n, { fill = false, size = 20, cls = '' } = {}) =>
@@ -1154,6 +1340,7 @@ const startEl = $('#start'), startBtn = $('#startBtn'), startCopy = $('#startCop
 const stationsEl = $('#stations'), toasts = $('#toasts');
 const shareDlg = $('#shareDlg'), settingsDlg = $('#settingsDlg');
 const addPlDlg = $('#addPlDlg'), plNewDlg = $('#plNewDlg');
+const recapDlg = $('#recapDlg'), profDlg = $('#profDlg');
 const searchInput = $('#searchInput'), searchClear = $('#searchClear'), searchMeta = $('#searchMeta');
 const searchGrid = $('#searchGrid'), vibesEl = $('#vibes'), viewArtist = $('#viewArtist');
 const coarse = matchMedia('(pointer: coarse)').matches;
@@ -1232,7 +1419,7 @@ function onTime() {
 
   /* Gamification: count the listen + accrue listening time */
   const dt = t - state.lastT;
-  if (dt > 0 && dt < 2) stats.seconds += dt;
+  if (dt > 0 && dt < 2) { stats.seconds += dt; trackListen(dt); }
   if (state.playedId !== id) { state.playedId = id; state.playT = 0; }
   if (dt > 0 && dt < 2) state.playT += dt;
   /* Loop wrap happens after a near-end sample → also counts as finished */
@@ -1241,8 +1428,13 @@ function onTime() {
   if (state.currentClip && t > 4 && !state.counted.has(id)) {
     state.counted.add(id);
     stats.heard++;
+    rollPeriods();
+    stats.today.clips++; stats.week.clips++;
+    const dk = dayKey();
+    if (!stats.week.days.includes(dk)) stats.week.days.push(dk);
+    bumpWeekClip(state.currentClip);
     const g = state.currentClip.station || state.currentClip.genre;
-    if (g) stats.genres[g] = (stats.genres[g] || 0) + 1;
+    if (g) { stats.genres[g] = (stats.genres[g] || 0) + 1; stats.week.genres[g] = (stats.week.genres[g] || 0) + 1; }
     gainXp(2);
     touchStreak();
   }
@@ -1977,6 +2169,9 @@ function renderProfile() {
   $('#streakBest').textContent = String(stats.best || 0);
   $('#pFlame').classList.toggle('on', (stats.streak || 0) > 0);
   $('#pFinished').textContent = String(stats.finished || 0);
+  const bioEl = $('#pBio');
+  if (bioEl) bioEl.textContent = (profile && profile.bio) || '30 seconds at a time 🎧';
+  paintGoal();
   const entries = Object.entries(stats.genres || {}).sort((a, b) => b[1] - a[1]).slice(0, 4);
   $('#genreDots').innerHTML = entries.length ? entries.map(([g, n]) => {
     const c = GENRE_COLORS[g] || PALETTE[(g.length + g.charCodeAt(0)) % PALETTE.length];
@@ -2048,6 +2243,7 @@ function paintSettings() {
   $('#setVolume').value = String(prefs.volume);
   $('#setAuto').checked = !!prefs.auto;
   $('#setLyrics').checked = !!prefs.lyrics;
+  $$('.seg-btn[data-goal]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.goal === (prefs.goalMin || 10))));
   const li = levelInfo(stats.xp);
   $('#sLevel').textContent = li.lvl;
   $('#sHeard').textContent = fmt(stats.heard);
@@ -2126,6 +2322,17 @@ document.addEventListener('click', e => {
       }
       break;
     }
+    case 'recapplay': {
+      const top = state.recapTop || [];
+      if (top.length) {
+        const i = +a.dataset.idx || 0;
+        top.forEach(c => { if (!state.searchMap[c.id]) state.searchMap[c.id] = c; });
+        recapDlg.close();
+        playItems(top.slice(i).concat(top.slice(0, i)), '📊 Weekly recap', { type: 'recap' });
+      }
+      break;
+    }
+    case 'recapmix': recapDlg.close(); playVibeMix(); break;
     case 'retry': setStation(); break;
     case 'top': feed.scrollTo({ top: 0, behavior: 'smooth' }); break;
     case 'research': doSearch(state.searchTerm || searchInput.value); break;
@@ -2243,7 +2450,7 @@ $('#settingsBtn').addEventListener('click', () => { paintSettings(); settingsDlg
 $('#copyBtn').addEventListener('click', copyLink);
 $('#artistBack').addEventListener('click', () => showView(state.artistFrom || 'search'));
 
-[settingsDlg, shareDlg, addPlDlg, plNewDlg].forEach(d => d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) d.close(); }));
+[settingsDlg, shareDlg, addPlDlg, plNewDlg, recapDlg, profDlg].forEach(d => d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) d.close(); }));
 
 /* Queue bar */
 document.addEventListener('click', e => {
@@ -2284,7 +2491,31 @@ $('#setLyrics').addEventListener('change', e => {
   });
   if (prefs.lyrics) { const c = state.clips[state.active]; if (c) { paintLyrics(c.id); loadLyrics(c); } toast('Live lyrics on.'); }
 });
-$('#editProfile').addEventListener('click', () => { settingsDlg.close(); startOnboarding(true); });
+$('#editProfile').addEventListener('click', () => { settingsDlg.close(); openProfEdit(); });
+$('#pEditBtn').addEventListener('click', () => openProfEdit());
+$('#profSave').addEventListener('click', saveProfEdit);
+$('#profBio').addEventListener('input', e => { profDraft.bio = e.target.value; $('#profBioCount').textContent = String(e.target.value.length); });
+profDlg.addEventListener('click', e => {
+  const em = e.target.closest('[data-profemoji]');
+  if (em) { profDraft.avatar = { type: 'emoji', value: em.dataset.profemoji }; renderProfEdit(); return; }
+  const tt = e.target.closest('[data-proftaste]');
+  if (tt) {
+    const id = tt.dataset.proftaste;
+    if (profDraft.tastes.has(id)) profDraft.tastes.delete(id); else profDraft.tastes.add(id);
+    renderProfEdit();
+  }
+});
+profDlg.addEventListener('change', e => {
+  if (e.target.id !== 'profPhoto') return;
+  readAvatar(e.target, a => { profDraft.avatar = a; renderProfEdit(); });
+});
+$('#recapBtn').addEventListener('click', () => openRecap());
+$('#recapBtn2').addEventListener('click', () => { settingsDlg.close(); openRecap(); });
+$('#mixPlay').addEventListener('click', () => playVibeMix());
+$$('.seg-btn[data-goal]').forEach(b => b.addEventListener('click', () => {
+  prefs.goalMin = +b.dataset.goal; savePrefs(); paintSettings(); paintGoal(); buzz(10);
+  toast('Daily goal set to ' + prefs.goalMin + ' minutes.');
+}));
 $('#signOutBtn').addEventListener('click', () => {
   if (!confirm('Sign out? Your playlists and likes stay on this device.')) return;
   settingsDlg.close(); startOnboarding(false);
@@ -2324,6 +2555,194 @@ function openPlNew(firstClipId) {
 }
 
 /* =====================================================================
+   Return visits: daily goal ring, weekly recap, streak freezes, vibe mix
+   ===================================================================== */
+const RING_LEN = 226.2;
+function paintGoal() {
+  rollPeriods();
+  const goal = Math.max(1, prefs.goalMin || 10);
+  const mins = stats.today.seconds / 60;
+  const pct = Math.max(0, Math.min(1, mins / goal));
+  const ring = $('#goalRing');
+  if (ring) ring.style.strokeDashoffset = String(RING_LEN * (1 - pct));
+  const gp = $('#goalPct'); if (gp) gp.textContent = Math.round(pct * 100) + '%';
+  const gt = $('#goalTxt'); if (gt) gt.textContent = Math.floor(mins) + '/' + goal + ' min';
+  const gh = $('#goalHint');
+  if (gh) gh.textContent = pct >= 1
+    ? 'Goal reached — everything past this is a bonus.'
+    : Math.max(0, Math.ceil(goal - mins)) + ' min to go. Clips count as they play.';
+  const gd = $('#goalDone'); if (gd) gd.hidden = !stats.today.hitGoal;
+  const ft = $('#freezeTag'), fc = $('#freezeCount');
+  if (fc) fc.textContent = String(stats.freezes || 0);
+  if (ft) ft.hidden = !(stats.freezes || 0);
+  const wl = $('#weekLine');
+  if (wl) {
+    const p = stats.pendingRecap;
+    if (p) wl.textContent = 'Last week: ' + Math.round((p.seconds || 0) / 60) + ' min · ' + (p.clips || 0) + ' clips — recap ready.';
+    else {
+      const w = stats.week, c = w.clips || 0, m = Math.round((w.seconds || 0) / 60);
+      wl.textContent = (c || m)
+        ? m + ' min · ' + c + ' clip' + (c === 1 ? '' : 's') + ' · ' + (w.finished || 0) + ' finished · ' + (w.days || []).length + '/7 days active'
+        : 'Nothing tracked yet this week — play a clip to start.';
+    }
+  }
+}
+
+const recapTop = w => Object.values(w.clipsMap || {}).sort((a, b) => b.n - a.n || b.at - a.at).slice(0, 5);
+function recapHTML(w, isLast, top) {
+  const mins = Math.round((w.seconds || 0) / 60);
+  const days = (w.days || []).length || (w.clips ? 1 : 0);
+  const genres = Object.entries(w.genres || {}).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  const maxG = genres.length ? genres[0][1] : 1;
+  return `
+    <p class="text-xs text-muted">${isLast ? 'Here is what last week sounded like.' : 'Live totals for the week so far.'}</p>
+    <div class="stat-grid sm mt-3">
+      <div class="stat-card"><p class="stat-num">${mins}</p><p class="stat-lab">Minutes</p></div>
+      <div class="stat-card"><p class="stat-num">${w.clips || 0}</p><p class="stat-lab">Clips</p></div>
+      <div class="stat-card"><p class="stat-num">${w.finished || 0}</p><p class="stat-lab">Finished</p></div>
+      <div class="stat-card"><p class="stat-num">${days}</p><p class="stat-lab">Days</p></div>
+    </div>
+    ${top.length ? `
+      <h3 class="round mt-5 text-sm font-bold tracking-tight">Top clips</h3>
+      <div class="mt-1">
+        ${top.map((c, i) => `
+          <button class="recap-row" data-act="recapplay" data-idx="${i}" aria-label="Play ${esc(c.title)}">
+            <span class="recap-rank mono">${i + 1}</span>
+            ${c.art ? `<img class="recap-art" src="${esc(c.art)}" alt="" loading="lazy">` : '<span class="recap-art"></span>'}
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-sm font-semibold">${esc(c.title)}</span>
+              <span class="block truncate text-xs text-muted">${esc(c.artist)} · ${c.n} play${c.n === 1 ? '' : 's'}</span>
+            </span>
+            <span class="text-muted">${icon('play', { size: 16 })}</span>
+          </button>`).join('')}
+      </div>` : '<p class="mt-5 text-sm text-muted">Nothing tracked yet. Play a few clips and this page fills itself in.</p>'}
+    ${genres.length ? `
+      <h3 class="round mt-5 text-sm font-bold tracking-tight">Your genres</h3>
+      <div class="gbar mt-3">
+        ${genres.map(([g, n]) => {
+          const col = GENRE_COLORS[g] || PALETTE[(g.length + g.charCodeAt(0)) % PALETTE.length];
+          return `<div class="gbar-row"><span class="truncate">${esc(g)}</span><span class="gbar-track"><span class="gbar-fill" style="width:${Math.round((n / maxG) * 100)}%;background:${col}"></span></span><span class="mono text-right text-muted">${n}</span></div>`;
+        }).join('')}
+      </div>` : ''}
+    <button class="btn-primary round mt-5 w-full" data-act="recapmix">Play my vibe mix</button>
+    <p class="mt-2 text-center text-xs text-muted">Finishing a whole clip is worth 10 XP — the fastest way to level up.</p>`;
+}
+function openRecap() {
+  const isLast = !!stats.pendingRecap;
+  const w = (isLast ? stats.pendingRecap : stats.week) || emptyWeek();
+  state.recapTop = recapTop(w);
+  $('#recapHeading').textContent = isLast ? 'Last week in music' : 'Your week so far';
+  $('#recapBody').innerHTML = recapHTML(w, isLast, state.recapTop);
+  if (isLast) { stats.recapSeen = w.key; stats.pendingRecap = null; saveStats(); }
+  paintGoal();
+  recapDlg.showModal();
+  buzz(10);
+}
+
+/* The vibe mix: top genres + recent likes + this week's repeats, in one queue. */
+const vibeGenres = (limit = 4) => Object.entries(stats.genres || {}).sort((a, b) => b[1] - a[1]).slice(0, limit).map(e => e[0]);
+function knownClips() {
+  const map = new Map();
+  const add = c => { if (c && c.id && c.audio && !map.has(c.id)) map.set(c.id, c); };
+  Object.values((stats.week && stats.week.clipsMap) || {}).forEach(add);
+  Object.values(state.liked).forEach(add);
+  Object.values(state.searchMap).forEach(add);
+  state.playlists.forEach(p => p.items.forEach(add));
+  state.clips.forEach(add);
+  return [...map.values()];
+}
+function buildVibeMix(limit = 20) {
+  const genres = vibeGenres(4);
+  const all = knownClips();
+  const wk = (stats.week && stats.week.clipsMap) || {};
+  const scored = all.map(c => {
+    const g = c.station || c.genre || '';
+    const gi = genres.indexOf(g);
+    return { c, s: (gi >= 0 ? (4 - gi) * 3 : 0) + (state.liked[c.id] ? 4 : 0) + (wk[c.id] ? wk[c.id].n : 0) };
+  }).sort((a, b) => b.s - a.s);
+  const out = scored.slice(0, limit).map(x => x.c);
+  if (out.length < limit) {
+    const have = new Set(out.map(c => c.id));
+    shuffle(all.filter(c => !have.has(c.id))).slice(0, limit - out.length).forEach(c => out.push(c));
+  }
+  return out;
+}
+async function playVibeMix() {
+  let mix = buildVibeMix(20);
+  if (mix.length < 5) {
+    const g = vibeGenres(1)[0] || 'pop';
+    const list = ARTISTS[g] || [];
+    const term = list.length ? list[Math.floor(Math.random() * list.length)] : stationLabel(g) + ' hits';
+    try {
+      const extra = await provider.search(term, { limit: 12 });
+      const have = new Set(mix.map(c => c.id));
+      extra.forEach(c => { if (!have.has(c.id)) { have.add(c.id); mix.push(c); } });
+    } catch {}
+  }
+  if (!mix.length) { toast('Play a few clips first — then your mix builds itself.'); return; }
+  playItems(shuffle(mix).slice(0, 20), '✨ Your vibe mix', { type: 'mix' });
+}
+
+/* ---------- Edit profile: avatar, bio and tastes (username stays fixed) ---------- */
+const profDraft = { avatar: null, bio: '', tastes: new Set() };
+function readAvatar(input, done) {
+  const file = input.files && input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const size = 256, cv = document.createElement('canvas');
+        const scale = Math.min(size / img.width, size / img.height, 1);
+        cv.width = Math.round(img.width * scale); cv.height = Math.round(img.height * scale);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        done({ type: 'img', value: cv.toDataURL('image/jpeg', 0.82) });
+      } catch { done({ type: 'img', value: reader.result }); }
+    };
+    img.onerror = () => done({ type: 'img', value: reader.result });
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+function openProfEdit() {
+  const p = profile || {};
+  profDraft.avatar = p.avatar && p.avatar.type === 'img' ? p.avatar : (p.avatar || { type: 'emoji', value: '🎧' });
+  profDraft.bio = p.bio || '';
+  profDraft.tastes = new Set(p.tastes || []);
+  renderProfEdit();
+  profDlg.showModal();
+}
+function renderProfEdit() {
+  const p = profile || {};
+  $('#profUser').textContent = p.name || 'you';
+  const av = $('#profAvPreview');
+  if (profDraft.avatar && profDraft.avatar.type === 'img') av.innerHTML = `<img src="${esc(profDraft.avatar.value)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:999px">`;
+  else av.textContent = (profDraft.avatar && profDraft.avatar.value) || '🎧';
+  $('#profEmoji').innerHTML = OB_EMOJI.map(e => `<button class="chip round" data-profemoji="${e}" aria-pressed="${profDraft.avatar && profDraft.avatar.type !== 'img' && profDraft.avatar.value === e}">${e}</button>`).join('');
+  $('#profTastes').innerHTML = OB_TASTES.map(t => `<button class="chip round" data-proftaste="${t.id}" aria-pressed="${profDraft.tastes.has(t.id)}">${t.emoji} ${t.label}</button>`).join('');
+  const bio = $('#profBio');
+  if (bio && bio.value !== profDraft.bio) bio.value = profDraft.bio;
+  const cnt = $('#profBioCount'); if (cnt) cnt.textContent = String(profDraft.bio.length);
+}
+function saveProfEdit() {
+  if (!profile) { toast('No profile to edit yet.'); return; }
+  profile.avatar = profDraft.avatar || profile.avatar;
+  profile.bio = ($('#profBio').value || '').trim().slice(0, 140);
+  profile.tastes = [...profDraft.tastes];
+  saveProfile();
+  if (profile.tastes.length) {
+    store.set('snip:stations', profile.tastes);
+    state.stations = new Set(profile.tastes);
+    state.pool = buildPool([...state.stations]);
+    renderStations();
+  }
+  profDlg.close();
+  renderProfile(); renderSaved(); paintSettings();
+  buzz([12, 30, 12]); blip('tap');
+  toast('Profile updated.');
+}
+
+/* =====================================================================
    Onboarding
    ===================================================================== */
 const OB_EMOJI = ['🎧', '🎤', '🎸', '🎹', '🥁', '🎷', '🪩', '🌙', '🔥', '💜', '🌈', '🚀'];
@@ -2346,7 +2765,7 @@ function startOnboarding(edit) {
   if (edit) ob.step = 1;
   else if (p && p.passHash) { ob.lock = true; ob.step = 0; }
   else { ob.lock = false; ob.step = 0; }
-  onboardEl().hidden = false;
+  overlay(onboardEl(), true);
   renderOnboard();
 }
 function obNext() { ob.step++; ob.error = ''; renderOnboard(); }
@@ -2500,7 +2919,7 @@ async function finishOnboarding() {
   const p = { name: ob.name || 'you', avatar: ob.avatar || { type: 'emoji', value: '🎧' }, passHash, tastes: [...ob.tastes], onboarded: true, at: Date.now() };
   store.set('snip:profile', p);
   if (p.tastes.length) { state.stations = new Set(p.tastes); store.set('snip:stations', [...state.stations]); renderStations(); }
-  onboardEl().hidden = true;
+  overlay(onboardEl(), false);
   renderProfile();
   if (ob.edit && state.started) { toast('Profile updated.'); return; }
   state.started = true; startEl.hidden = true;
@@ -2529,25 +2948,54 @@ onboardEl().addEventListener('click', async e => {
 });
 onboardEl().addEventListener('change', e => {
   if (e.target.id !== 'obPhoto') return;
-  const file = e.target.files && e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    const img = new Image();
-    img.onload = () => {
-      try {
-        const size = 256, cv = document.createElement('canvas');
-        const scale = Math.min(size / img.width, size / img.height, 1);
-        cv.width = Math.round(img.width * scale); cv.height = Math.round(img.height * scale);
-        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-        ob.avatar = { type: 'img', value: cv.toDataURL('image/jpeg', 0.82) };
-      } catch { ob.avatar = { type: 'img', value: reader.result }; }
-      renderOnboard();
-    };
-    img.onerror = () => { ob.avatar = { type: 'img', value: reader.result }; renderOnboard(); };
-    img.src = reader.result;
-  };
-  reader.readAsDataURL(file);
+  readAvatar(e.target, a => { ob.avatar = a; renderOnboard(); });
 });
+
+/* =====================================================================
+   PWA: service worker, install prompt, offline state
+   ===================================================================== */
+let deferredInstall = null;
+function initPwa() {
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const btn = $('#installBtn'), hint = $('#installHint'), stateEl = $('#pwaState');
+  const setHint = m => { if (hint) hint.textContent = m; };
+  if (standalone) {
+    if (btn) btn.hidden = true;
+    setHint('Running as an installed app.');
+  } else {
+    setHint(isiOS ? 'On iPhone or iPad: Share → Add to Home Screen.' : 'Install for a home-screen icon and offline playlists.');
+  }
+  if (stateEl) stateEl.textContent = 'Works offline once loaded — artwork and playlists are cached on your device.';
+  addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredInstall = e;
+    if (btn) btn.hidden = false;
+    setHint('Ready to install — one tap and it lives on your home screen.');
+  });
+  addEventListener('appinstalled', () => { deferredInstall = null; if (btn) btn.hidden = true; toast('snip.fm installed 🎉'); });
+  if (btn) btn.addEventListener('click', async () => {
+    if (!deferredInstall) { toast(isiOS ? 'Use Share → Add to Home Screen to install.' : 'Your browser will offer install when it is ready.'); return; }
+    deferredInstall.prompt();
+    const res = await deferredInstall.userChoice.catch(() => null);
+    if (btn) btn.hidden = true;
+    deferredInstall = null;
+    if (res && res.outcome === 'accepted') toast('Installing snip.fm…');
+  });
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const sw = reg.installing;
+        if (!sw) return;
+        sw.addEventListener('statechange', () => {
+          if (sw.state === 'installed' && navigator.serviceWorker.controller) toast('Update ready — reopen the app to load it.');
+        });
+      });
+    }).catch(() => {});
+    addEventListener('offline', () => toast("You're offline — cached clips and playlists still work."));
+    addEventListener('online', () => toast('Back online.'));
+  }
+}
 
 /* =====================================================================
    Boot
@@ -2579,6 +3027,15 @@ async function init() {
     } catch {}
   }
   loadMore();
+
+  rollPeriods();
+  saveStats();
+  paintGoal();
+  initPwa();
+  if (location.hash === '#search') showView('search');
+  else if (location.hash === '#profile') showView('profile');
+  /* First visit of a new week: the recap is the reason to come back. */
+  if (stats.pendingRecap && onboardEl().classList.contains('hidden')) { openRecap(); toast('📊 Your week in music is ready.'); }
 }
 init();
 })();
