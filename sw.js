@@ -1,6 +1,6 @@
 /* snip.fm service worker — offline shell + runtime caching.
    Bump CACHE when the shell changes so clients pick up the new build. */
-const CACHE = 'snipfm-v2';
+const CACHE = 'snipfm-v3';
 const SHELL = [
   './',
   './index.html',
@@ -10,7 +10,7 @@ const SHELL = [
   './icons/maskable-512.png',
   './icons/apple-touch-icon.png'
 ];
-const ART_CACHE = 'snipfm-art-v2';
+const ART_CACHE = 'snipfm-art-v3';
 const ART_MAX = 160;
 
 self.addEventListener('install', event => {
@@ -78,6 +78,10 @@ self.addEventListener('fetch', event => {
   // Never intercept audio: previews use range requests and must stream live.
   if (req.destination === 'audio' || req.headers.has('range')) return;
 
+  // JSONP fallbacks embed a unique callback name in the URL, so caching them
+  // would both miss every time and slowly flood the cache.
+  if (url.searchParams.has('callback')) return;
+
   // Navigations: fresh HTML when online, cached shell when not.
   if (req.mode === 'navigate') {
     event.respondWith(networkFirst(req, './index.html'));
@@ -89,13 +93,13 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  if (url.hostname === 'cdn.tailwindcss.com' || url.hostname.endsWith('mzstatic.com')) {
+  if (url.hostname === 'cdn.tailwindcss.com' || url.hostname.endsWith('mzstatic.com') || url.hostname.endsWith('dzcdn.net')) {
     event.respondWith(staleWhileRevalidate(req, ART_CACHE));
     return;
   }
 
   // iTunes search / lyrics: try the network, keep a copy for offline.
-  if (url.hostname === 'itunes.apple.com' || url.hostname === 'api.lyrics.ovh') {
+  if (url.hostname === 'itunes.apple.com' || url.hostname === 'api.deezer.com' || url.hostname === 'api.lyrics.ovh') {
     event.respondWith((async () => {
       try {
         const res = await fetch(req);

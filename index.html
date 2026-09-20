@@ -56,12 +56,27 @@
     --surface: #fafafa; --surface-2: #f4f4f5;
     --accent: #c6002b; --on-accent: #ffffff;
     --spring: cubic-bezier(.34, 1.56, .64, 1);
+    /* Physical button faces: a lit top edge and a soft cast shadow */
+    --btn-face: linear-gradient(180deg, #ffffff 0%, #f1f1f4 100%);
+    --btn-face-hi: linear-gradient(180deg, #ffffff 0%, #e7e7ec 100%);
+    --btn-edge: rgba(9, 9, 11, .12);
+    --btn-inner: rgba(255, 255, 255, .95);
+    --btn-glow: rgba(9, 9, 11, .16);
+    --glass: rgba(255, 255, 255, .74);
+    --glass-edge: rgba(9, 9, 11, .10);
     color-scheme: light;
   }
   .dark {
     --bg: #000000; --fg: #ededed; --muted: #a1a1aa; --line: #27272a;
     --surface: #0a0a0a; --surface-2: #18181b;
     --accent: #ff3b5c; --on-accent: #000000;
+    --btn-face: linear-gradient(180deg, #26262b 0%, #141417 100%);
+    --btn-face-hi: linear-gradient(180deg, #313137 0%, #1a1a1e 100%);
+    --btn-edge: rgba(255, 255, 255, .13);
+    --btn-inner: rgba(255, 255, 255, .10);
+    --btn-glow: rgba(0, 0, 0, .55);
+    --glass: rgba(10, 10, 12, .6);
+    --glass-edge: rgba(255, 255, 255, .12);
     color-scheme: dark;
   }
 
@@ -85,35 +100,54 @@
   /* ---------- Shared controls ---------- */
   .icon-btn {
     display: inline-grid; place-items: center; width: 44px; height: 44px;
-    border-radius: 999px; color: var(--muted); transition: color .12s, background .12s, transform .12s var(--spring);
+    border-radius: 999px; color: var(--muted);
+    transition: color .14s, background .14s, transform .16s var(--spring), box-shadow .18s;
   }
-  .icon-btn:hover { color: var(--fg); background: var(--surface-2); }
+  .icon-btn:hover { color: var(--fg); background: var(--surface-2); box-shadow: inset 0 1px 0 var(--btn-inner); }
   .icon-btn:active { transform: scale(.9); }
   .fab {
-    display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 999px;
-    border: 1px solid var(--line); background: var(--bg); color: var(--fg);
-    box-shadow: 0 2px 8px rgba(0,0,0,.08); transition: background .12s, opacity .12s, transform .15s var(--spring);
+    display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 999px;
+    border: 1px solid var(--btn-edge); background: var(--btn-face); color: var(--fg);
+    box-shadow: inset 0 1px 0 var(--btn-inner), 0 6px 16px -8px var(--btn-glow);
+    transition: background .14s, transform .18s var(--spring), box-shadow .18s, opacity .14s;
   }
-  .fab:hover { background: var(--surface-2); transform: scale(1.08); }
-  .fab:disabled { opacity: .35; }
+  .fab:hover { background: var(--btn-face-hi); transform: translateY(-2px) scale(1.04); box-shadow: inset 0 1px 0 var(--btn-inner), 0 14px 24px -10px var(--btn-glow); }
+  .fab:active { transform: translateY(0) scale(.94); box-shadow: inset 0 2px 6px var(--btn-glow); }
+  .fab:disabled { opacity: .3; box-shadow: none; }
+
+  /* Buttons with a real face: lit top edge, cast shadow, springy press */
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    min-height: 44px; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px;
-    background: var(--bg); color: var(--fg); font-size: 14px; font-weight: 600;
-    transition: background .12s, border-color .12s, transform .12s var(--spring);
+    min-height: 44px; padding: 0 20px; border-radius: 999px;
+    border: 1px solid var(--btn-edge); background: var(--btn-face); color: var(--fg);
+    font-size: 14px; font-weight: 650; letter-spacing: -.01em;
+    box-shadow: inset 0 1px 0 var(--btn-inner), 0 1px 2px var(--btn-glow), 0 8px 18px -12px var(--btn-glow);
+    transition: background .14s, border-color .14s, transform .18s var(--spring), box-shadow .18s;
   }
-  .btn:hover { background: var(--surface-2); border-color: var(--muted); }
-  .btn:active { transform: scale(.96); }
+  .btn:hover { background: var(--btn-face-hi); border-color: color-mix(in srgb, var(--fg) 22%, var(--btn-edge)); transform: translateY(-1px); box-shadow: inset 0 1px 0 var(--btn-inner), 0 10px 22px -12px var(--btn-glow); }
+  .btn:active { transform: translateY(0) scale(.97); box-shadow: inset 0 2px 7px var(--btn-glow); }
+  .btn:disabled { opacity: .45; }
   .btn-primary {
-    display: inline-flex; align-items: center; justify-content: center;
-    min-height: 52px; padding: 0 32px; border-radius: 999px; border: 0;
-    background: var(--accent); color: var(--on-accent); font-size: 15px; font-weight: 700;
-    box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 35%, transparent);
-    transition: filter .12s, transform .15s var(--spring);
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 52px; padding: 0 32px; border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--accent) 62%, #000);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 82%, #fff) 0%, var(--accent) 100%);
+    color: var(--on-accent); font-size: 15px; font-weight: 750; letter-spacing: -.01em;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .38), 0 2px 6px color-mix(in srgb, var(--accent) 45%, transparent), 0 16px 32px -16px color-mix(in srgb, var(--accent) 90%, transparent);
+    transition: filter .14s, transform .18s var(--spring), box-shadow .18s;
   }
-  .btn-primary:hover:not(:disabled) { filter: brightness(.92); transform: scale(1.03); }
-  .btn-primary:active:not(:disabled) { transform: scale(.96); }
-  .btn-primary:disabled { opacity: .5; }
+  .btn-primary:hover:not(:disabled) { filter: brightness(1.05); transform: translateY(-2px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), 0 4px 10px color-mix(in srgb, var(--accent) 45%, transparent), 0 22px 40px -18px color-mix(in srgb, var(--accent) 95%, transparent); }
+  .btn-primary:active:not(:disabled) { transform: translateY(1px) scale(.98); box-shadow: inset 0 3px 10px rgba(0, 0, 0, .28), 0 2px 5px color-mix(in srgb, var(--accent) 40%, transparent); }
+  .btn-primary:disabled { opacity: .55; box-shadow: none; }
+  .station-bar {
+    position: relative; z-index: 6; padding-top: env(safe-area-inset-top);
+    background: var(--glass); backdrop-filter: blur(20px) saturate(1.5);
+    box-shadow: inset 0 -1px 0 var(--glass-edge);
+  }
+  .station-bar::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -20px; height: 20px; pointer-events: none;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 55%, transparent), transparent);
+  }
   .count-pill {
     display: inline-block; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 4px;
     line-height: 16px; text-align: center; font-size: 11px; vertical-align: middle;
@@ -151,19 +185,21 @@
 
   /* ---------- Stations: playful multi-select pills ---------- */
   .chip {
-    position: relative; flex: none; height: 38px; padding: 0 16px; border: 1.5px solid var(--line);
-    border-radius: 999px; background: var(--bg); color: var(--muted); font-size: 14px; font-weight: 600;
-    transition: color .12s, border-color .12s, background .12s, transform .15s var(--spring), box-shadow .15s;
+    position: relative; flex: none; height: 38px; padding: 0 18px;
+    border: 1px solid var(--btn-edge); border-radius: 999px;
+    background: var(--btn-face); color: var(--fg); font-size: 14px; font-weight: 650; letter-spacing: -.01em;
+    box-shadow: inset 0 1px 0 var(--btn-inner), 0 6px 14px -12px var(--btn-glow);
+    transition: color .14s, border-color .14s, background .14s, transform .18s var(--spring), box-shadow .18s;
   }
   .chip::before { content: ""; position: absolute; inset: -4px 0; } /* 44px touch target */
-  .chip:hover { color: var(--fg); border-color: var(--muted); }
-  .chip:active { transform: scale(.92); }
-  .chip[aria-pressed="true"] {
-    background: var(--accent); color: var(--on-accent); border-color: var(--accent);
-    box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 40%, transparent);
+  .chip:hover { background: var(--btn-face-hi); transform: translateY(-1px); box-shadow: inset 0 1px 0 var(--btn-inner), 0 10px 18px -12px var(--btn-glow); }
+  .chip:active { transform: scale(.94); }
+  .chip[aria-pressed="true"], .chip.added {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 82%, #fff) 0%, var(--accent) 100%);
+    color: var(--on-accent); border-color: color-mix(in srgb, var(--accent) 62%, #000);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .34), 0 10px 20px -10px color-mix(in srgb, var(--accent) 80%, transparent);
   }
   .chip.wiggle { animation: wiggle .45s var(--spring); }
-  .chip.added { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
   .vibe { height: 34px; padding: 0 14px; font-size: 13px; }
   @keyframes wiggle {
     0%, 100% { transform: rotate(0); }
@@ -172,15 +208,24 @@
   }
 
   /* ---------- Feed ---------- */
+  /* The feed owns the whole screen: a tinted backdrop plus per-clip colour */
+  #viewFeed { background: linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 93%, var(--accent)) 100%); }
   #feed {
     position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain;
     scroll-snap-type: y mandatory; scrollbar-width: none;
   }
   #feed::-webkit-scrollbar { display: none; }
-  .slide { position: relative; height: 100%; display: flex; justify-content: center; scroll-snap-align: start; scroll-snap-stop: always; }
+  .slide {
+    position: relative; height: 100%; display: flex; justify-content: center;
+    scroll-snap-align: start; scroll-snap-stop: always; overflow: hidden;
+    background:
+      radial-gradient(130% 68% at 50% -6%, color-mix(in srgb, var(--glow, var(--accent)) 30%, transparent), transparent 60%),
+      linear-gradient(180deg, color-mix(in srgb, var(--glow, var(--accent)) 14%, var(--bg)) 0%, var(--bg) 74%);
+  }
   .slide-in {
-    position: relative; display: flex; flex-direction: column; gap: 16px;
-    width: 100%; max-width: 440px; height: 100%; padding: 16px 16px 20px;
+    position: relative; display: flex; flex-direction: column; gap: 18px;
+    width: 100%; max-width: 440px; height: 100%;
+    padding: 16px 18px 22px;
   }
   .slide-in.msg { align-items: center; justify-content: center; text-align: center; gap: 12px; }
 
@@ -188,9 +233,19 @@
   .art {
     position: relative; display: block; padding: 0; overflow: hidden;
     width: min(100%, 50dvh); aspect-ratio: 1;
-    border-radius: 28px; background: transparent;
-    transition: transform .15s var(--spring), box-shadow .2s;
+    border-radius: 30px;
+    background: color-mix(in srgb, var(--glow, var(--accent)) 16%, var(--surface-2));
+    border: 1px solid color-mix(in srgb, var(--fg) 10%, transparent);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 28px 60px -26px color-mix(in srgb, var(--glow, var(--accent)) 85%, transparent), 0 4px 16px -8px rgba(0, 0, 0, .45);
+    transition: transform .18s var(--spring), box-shadow .3s;
   }
+  .art::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+    background: linear-gradient(158deg, rgba(255, 255, 255, .34) 0%, rgba(255, 255, 255, .07) 24%, transparent 46%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .2);
+    mix-blend-mode: screen;
+  }
+  .slide.on-stage .art { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 34px 74px -24px color-mix(in srgb, var(--glow, var(--accent)) 95%, transparent), 0 6px 20px -10px rgba(0, 0, 0, .5); }
   @supports (width: 1cqw) { .art { width: min(100cqw, 100cqh); height: min(100cqw, 100cqh); aspect-ratio: auto; } }
   button.art:active { transform: scale(.98); }
   .slide.is-playing .art { animation: artPulse 2.4s ease-in-out infinite; }
@@ -223,7 +278,6 @@
   .slide.user-paused .paused-badge { opacity: 1; transform: none; }
 
   /* Blurred art scrim behind the focused clip */
-  .slide { overflow: hidden; }
   .art-scrim {
     position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .25s;
     filter: blur(30px) saturate(1.85) brightness(.62); transform: scale(1.25);
@@ -234,14 +288,20 @@
   /* Per-clip action rail (Instagram-style, replaces the button row) */
   .rail { display: flex; flex-direction: column; gap: 14px; align-items: center; }
   .rail-btn {
-    display: grid; place-items: center; width: 46px; height: 46px; border-radius: 999px;
-    background: color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter: blur(10px);
-    border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
-    color: var(--fg); transition: transform .15s var(--spring), background .12s, color .12s;
+    display: grid; place-items: center; width: 48px; height: 48px; border-radius: 999px;
+    background: var(--glass); backdrop-filter: blur(16px) saturate(1.4);
+    border: 1px solid var(--glass-edge);
+    color: var(--fg);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 24%, transparent), 0 10px 24px -12px rgba(0, 0, 0, .6);
+    transition: transform .18s var(--spring), background .16s, color .16s, box-shadow .2s;
   }
-  .rail-btn:hover { transform: scale(1.1); }
-  .rail-btn:active { transform: scale(.88); }
-  .rail-btn.on { color: var(--accent); }
+  .rail-btn:hover { transform: translateY(-2px) scale(1.06); }
+  .rail-btn:active { transform: scale(.9); }
+  .rail-btn.on {
+    color: var(--glow, var(--accent));
+    border-color: color-mix(in srgb, var(--glow, var(--accent)) 55%, transparent);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 12px 26px -12px color-mix(in srgb, var(--glow, var(--accent)) 85%, transparent);
+  }
   .rail-btn.on svg { fill: currentColor; }
   .rail-btn.bookmarked { background: var(--fg); color: var(--bg); }
   .rail-lab { font-size: 11px; font-weight: 700; color: var(--muted); margin-top: -8px; }
@@ -253,10 +313,15 @@
   .rail-dot:hover { transform: scale(1.1); color: var(--fg); border-color: var(--muted); }
   .rail-count { text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); margin-top: -8px; }
   .rail-pl {
-    display: grid; place-items: center; width: 46px; height: 46px; border-radius: 999px;
-    background: var(--accent); color: var(--on-accent);
-    box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 45%, transparent);
+    display: grid; place-items: center; width: 52px; height: 52px; border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--accent) 62%, #000);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 82%, #fff) 0%, var(--accent) 100%);
+    color: var(--on-accent);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .34), 0 14px 28px -12px color-mix(in srgb, var(--accent) 95%, transparent);
+    transition: transform .18s var(--spring), box-shadow .2s;
   }
+  .rail-pl:hover { transform: translateY(-2px) scale(1.05); }
+  .rail-pl:active { transform: scale(.92); }
 
   /* Playing-a-playlist queue bar */
   .qbar {
@@ -271,8 +336,8 @@
 
   .meta { display: flex; align-items: center; gap: 10px; }
   .meta > div { min-width: 0; flex: 1; }
-  .title { font-size: 20px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .artist { margin-top: 2px; font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .title { font-size: 23px; font-weight: 800; letter-spacing: -.035em; line-height: 1.14; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .artist { margin-top: 3px; font-size: 14.5px; color: color-mix(in srgb, var(--fg) 62%, transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tag-e { flex: none; font: 600 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 2px 5px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); }
 
   /* The 30-second clip: one tick per second */
@@ -450,23 +515,38 @@
   .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; cursor: pointer; }
   .row-t { display: block; font-size: 14px; font-weight: 600; }
   .row-s { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .seg { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface-2); }
-  .seg-btn {
-    min-height: 36px; padding: 0 16px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--muted);
-    transition: background .15s, color .15s, transform .12s var(--spring);
+  .seg {
+    display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface-2);
+    box-shadow: inset 0 1px 3px var(--btn-glow), inset 0 0 0 1px var(--btn-edge);
   }
+  .seg-btn {
+    min-height: 36px; padding: 0 16px; border-radius: 999px; font-size: 13px; font-weight: 650; color: var(--muted);
+    transition: background .18s, color .18s, transform .12s var(--spring), box-shadow .18s;
+  }
+  .seg-btn:hover { color: var(--fg); }
   .seg-btn:active { transform: scale(.94); }
-  .seg-btn[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+  .seg-btn[aria-pressed="true"] {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 82%, #fff) 0%, var(--accent) 100%);
+    color: var(--on-accent);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .34), 0 4px 10px -4px color-mix(in srgb, var(--accent) 80%, transparent);
+  }
   .sw {
-    appearance: none; -webkit-appearance: none; position: relative; width: 52px; height: 32px; flex: none;
-    border-radius: 999px; background: var(--line); transition: background .15s; cursor: pointer; margin: 0;
+    appearance: none; -webkit-appearance: none; position: relative; width: 54px; height: 32px; flex: none;
+    border-radius: 999px; background: var(--surface-2); cursor: pointer; margin: 0;
+    box-shadow: inset 0 1px 3px var(--btn-glow), inset 0 0 0 1px var(--btn-edge);
+    transition: background .2s, box-shadow .2s;
   }
   .sw::after {
     content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 999px;
-    background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25); transition: transform .2s var(--spring);
+    background: linear-gradient(180deg, #ffffff, #e9e9ee);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .32), inset 0 1px 0 rgba(255, 255, 255, .95);
+    transition: transform .22s var(--spring);
   }
-  .sw:checked { background: var(--accent); }
-  .sw:checked::after { transform: translateX(20px); }
+  .sw:checked {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 82%, #fff) 0%, var(--accent) 100%);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, .25);
+  }
+  .sw:checked::after { transform: translateX(22px); }
   .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .stat-card { border: 1px solid var(--line); border-radius: 16px; padding: 10px 6px; text-align: center; background: var(--bg); }
 
@@ -606,7 +686,7 @@
   </section>
 
   <!-- Header -->
-  <header class="shrink-0 border-b border-line bg-bg" style="padding-top:env(safe-area-inset-top)">
+  <header id="topbar" class="shrink-0 border-b border-line bg-bg" style="padding-top:env(safe-area-inset-top)">
     <div class="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-4 sm:px-6">
       <button id="logoBtn" data-nav="feed" class="flex min-h-[44px] items-center gap-2 rounded-full pr-2" aria-label="snip.fm, go to feed">
         <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
@@ -635,7 +715,7 @@
 
     <!-- Feed view -->
     <section id="viewFeed" class="absolute inset-0 flex flex-col" aria-label="Feed">
-      <div class="shrink-0 border-b border-line">
+      <div id="stationBar" class="station-bar shrink-0">
         <div id="stations" class="no-sb mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-2 sm:px-6" role="group" aria-label="Stations — tap to mix genres"></div>
       </div>
       <div class="relative min-h-0 flex-1">
@@ -792,10 +872,11 @@
   </main>
 
   <!-- Bottom nav (mobile) -->
-  <nav class="grid shrink-0 grid-cols-3 border-t border-line bg-bg md:hidden" style="padding-bottom:env(safe-area-inset-bottom)" aria-label="Primary">
+  <nav class="grid shrink-0 grid-cols-4 border-t border-line bg-bg" style="padding-bottom:env(safe-area-inset-bottom)" aria-label="Primary">
     <button class="bnav" data-nav="feed" aria-current="page"><span data-i="radio"></span><span>Feed</span></button>
     <button class="bnav" data-nav="search"><span data-i="search"></span><span>Search</span></button>
     <button class="bnav" data-nav="profile"><span data-i="user"></span><span>Profile</span></button>
+    <button class="bnav" id="settingsNav" aria-label="Open settings"><span data-i="settings"></span><span>Settings</span></button>
   </nav>
 </div>
 
@@ -904,6 +985,7 @@
     <button id="installBtn" class="btn w-full" hidden><span data-i="download" data-s="16"></span><span>Install snip.fm</span></button>
     <p id="installHint" class="mt-2 text-xs text-muted">Offline clips, playlists and a home-screen icon.</p>
     <p id="pwaState" class="mt-1 text-xs text-muted"></p>
+    <p id="sSource" class="mt-1 text-xs text-muted">Music source: iTunes</p>
 
     <p class="set-h">Your stats</p>
     <div class="stat-grid">
@@ -922,7 +1004,7 @@
     <p class="mt-2 text-xs text-muted">Wipes likes, saves, stats and settings from this browser.</p>
 
     <p class="set-h">About</p>
-    <p class="text-sm leading-relaxed text-muted">A tiny music discovery feed. Scroll, hear 30 seconds, heart or save what sticks. Clips and artwork come from Apple's iTunes Search API — no keys needed. Everything stays in this browser; like counts and sharing are demo only.</p>
+    <p class="text-sm leading-relaxed text-muted">A tiny music discovery feed. Scroll, hear 30 seconds, heart or save what sticks. Clips and artwork come from Apple's iTunes Search API and Deezer — no keys needed, and it switches between them automatically when one throttles. Everything stays in this browser; like counts and sharing are demo only.</p>
     <h3 class="mt-4 text-sm font-semibold">Keyboard</h3>
     <ul class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted">
       <li><span class="kbd">J</span> <span class="kbd">↓</span> next</li>
@@ -1316,6 +1398,17 @@ const normalizeItunes = r => ({
   explicit: r.trackExplicitness === 'explicit'
 });
 
+const normalizeDeezer = r => ({
+  id: 'dz:' + r.id,
+  title: r.title_short || r.title,
+  artist: (r.artist && r.artist.name) || 'Unknown artist',
+  album: (r.album && r.album.title) || r.title_short || r.title,
+  art: (r.album && (r.album.cover_xl || r.album.cover_big)) || '',
+  audio: r.preview,
+  genre: r.genre || '',
+  explicit: !!r.explicit_lyrics
+});
+
 const PROVIDERS = {
   /* Works today: real 30-second previews, no API key. */
   itunes: {
@@ -1347,7 +1440,130 @@ const PROVIDERS = {
     }
   }
 };
-const provider = PROVIDERS.itunes;
+/* Deezer: another keyless 30-second preview source. Its API omits the CORS
+   origin header, so getJSON's JSONP fallback does the talking in the browser. */
+PROVIDERS.deezer = {
+  async search(term, { offset = 0, limit = 10 } = {}) {
+    const url = `https://api.deezer.com/search?q=${encodeURIComponent(term)}&limit=${limit}&index=${offset}`;
+    const data = await getJSON(url);
+    return (data.data || []).filter(r => r.preview && r.id).map(normalizeDeezer);
+  },
+  async lookup(id) {
+    const raw = encodeURIComponent(String(id).replace(/^dz:/, ''));
+    const data = await getJSON(`https://api.deezer.com/track/${raw}`);
+    return data && data.preview ? normalizeDeezer(data) : null;
+  },
+  async artists(term, { limit = 8 } = {}) {
+    const data = await getJSON(`https://api.deezer.com/search/artist?q=${encodeURIComponent(term)}&limit=${limit}`);
+    return (data.data || []).filter(a => a.id).map(a => ({
+      id: 'dz:' + a.id, name: a.name, genre: a.nb_album ? a.nb_album + ' albums' : 'Artist'
+    }));
+  },
+  async artistSongs(artistId, { limit = 25 } = {}) {
+    const raw = encodeURIComponent(String(artistId).replace(/^dz:/, ''));
+    const [info, top] = await Promise.all([
+      getJSON(`https://api.deezer.com/artist/${raw}`).catch(() => ({})),
+      getJSON(`https://api.deezer.com/artist/${raw}/top?limit=${limit}`)
+    ]);
+    return {
+      info: { id: 'dz:' + raw, name: info.name || '', genre: info.nb_album ? info.nb_album + ' albums' : 'Artist' },
+      songs: (top.data || []).filter(r => r.preview).map(normalizeDeezer)
+    };
+  }
+};
+
+/* ---- Source routing: start on iTunes, fail over when it throttles ----
+   Apple's Search API allows roughly 20 calls a minute per IP, so each source gets
+   its own budget, a failing source cools down and the next one takes over. */
+const PROV_LABEL = { itunes: 'iTunes', deezer: 'Deezer' };
+const PROV_ORDER = ['itunes', 'deezer'];
+const PROV_PER_MIN = { itunes: 15, deezer: 45 };
+const PROV_COOL_MS = 4 * 60e3;
+const provState = { hits: {}, down: {}, used: PROV_ORDER[0] };
+const provToast = {};
+function provHits(key) {
+  const now = Date.now();
+  provState.hits[key] = (provState.hits[key] || []).filter(t => now - t < 60000);
+  return provState.hits[key];
+}
+const provLeft = key => PROV_PER_MIN[key] - provHits(key).length;
+function provOrder() {
+  const now = Date.now();
+  const live = PROV_ORDER.filter(k => !(provState.down[k] > now));
+  const pool = live.length ? live : PROV_ORDER;
+  /* Canonical order, so the primary source is picked again the moment its
+     per-minute budget refreshes; the loop skips exhausted or cooling sources. */
+  return pool.slice().sort((a, b) => PROV_ORDER.indexOf(a) - PROV_ORDER.indexOf(b));
+}
+async function provCall(method, args) {
+  const from = provState.used;
+  let lastErr = null, why = '';
+  for (const key of provOrder()) {
+    if (provState.down[key] > Date.now()) { if (key === from) why = 'limit'; continue; }
+    if (provLeft(key) <= 0) { if (key === from) why = 'busy'; continue; }
+    provHits(key).push(Date.now());
+    try {
+      const out = await PROVIDERS[key][method](...args);
+      if (key !== provState.used) {
+        provState.used = key;
+        store.set('snip:source', key);
+        paintSource();
+        /* Only announce the fallback, and at most once every few minutes. */
+        if (key !== PROV_ORDER[0] && Date.now() - (provToast[key] || 0) > 3e5) {
+          provToast[key] = Date.now();
+          toast((why ? PROV_LABEL[PROV_ORDER[0]] + ' limit hit — ' : '') + 'playing from ' + PROV_LABEL[key] + '.');
+        }
+      }
+      return out;
+    } catch (err) {
+      lastErr = err;
+      provState.down[key] = Date.now() + PROV_COOL_MS;
+      why = 'limit';
+    }
+  }
+  throw lastErr || new Error('No music source available');
+}
+/* A throttled source can answer with an empty page, which the feed would read as
+   "end of station" — so an empty search gets a second opinion from the other one. */
+async function provSearch(term, opts) {
+  const primary = await provCall('search', [term, opts]);
+  if (primary && primary.length) return primary;
+  for (const key of PROV_ORDER) {
+    if (key === provState.used) continue;
+    if (provState.down[key] > Date.now() || provLeft(key) <= 0) continue;
+    provHits(key).push(Date.now());
+    try {
+      const alt = await PROVIDERS[key].search(term, opts);
+      if (alt && alt.length) {
+        provState.used = key;
+        store.set('snip:source', key);
+        paintSource();
+        return alt;
+      }
+    } catch { provState.down[key] = Date.now() + PROV_COOL_MS; }
+  }
+  return primary;
+}
+/* Track and artist ids are source-scoped, so lookups never cross-resolve into
+   another provider's id space (a Deezer track id means nothing to Apple). */
+const provider = {
+  search: (term, opts) => provSearch(term, opts),
+  artists: (term, opts) => provCall('artists', [term, opts]),
+  lookup: async id => {
+    const s = String(id);
+    try {
+      if (s.indexOf('dz:') === 0) return await PROVIDERS.deezer.lookup(s);
+      return await PROVIDERS.itunes.lookup(s);
+    } catch { return null; }
+  },
+  artistSongs: (id, opts) => (String(id).indexOf('dz:') === 0)
+    ? PROVIDERS.deezer.artistSongs(id, opts)
+    : PROVIDERS.itunes.artistSongs(id, opts)
+};
+function paintSource() {
+  const el = $('#sSource');
+  if (el) el.textContent = 'Music source: ' + (PROV_LABEL[provState.used] || 'iTunes') + ' (switches automatically when throttled)';
+}
 
 /* Stations: each maps to a handful of search terms. Select several to mix! */
 const ARTISTS = {
@@ -2273,6 +2489,11 @@ function playTile(id) {
 /* =====================================================================
    Views, theme, mute, toasts, settings
    ===================================================================== */
+/* The feed owns the full screen: no header there, just the clip */
+function paintChrome() {
+  const bar = $('#topbar');
+  if (bar) bar.hidden = state.view === 'feed';
+}
 function paintNav() {
   const key = state.view === 'artist' ? 'search' : state.view;
   $$('.navtab, .bnav').forEach(n => n.dataset.nav === key ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
@@ -2282,6 +2503,7 @@ function showView(v) {
   state.view = v;
   viewFeed.hidden = v !== 'feed'; viewSearch.hidden = v !== 'search'; viewProfile.hidden = v !== 'profile'; viewArtist.hidden = v !== 'artist';
   paintNav();
+  paintChrome();
   if (v === 'feed') {
     feed.scrollTop = state.active * feed.clientHeight;
     state.userPaused = false;
@@ -2529,6 +2751,7 @@ startBtn.addEventListener('click', () => {
 $('#prevBtn').addEventListener('click', () => go(-1));
 $('#nextBtn').addEventListener('click', () => go(1));
 $('#settingsBtn').addEventListener('click', () => { paintSettings(); settingsDlg.showModal(); buzz(10); });
+$('#settingsNav').addEventListener('click', () => { paintSettings(); paintSource(); settingsDlg.showModal(); buzz(10); });
 $('#copyBtn').addEventListener('click', copyLink);
 $('#artistBack').addEventListener('click', () => showView(state.artistFrom || 'search'));
 
@@ -3248,12 +3471,12 @@ async function init() {
   applyTheme();
   const pf = store.get('snip:profile', null);
   if (!pf || !pf.onboarded) { startOnboarding(false); }
-  paintMute(); renderStations(); renderVibes(); renderSearchEmpty(); paintNav(); renderProfile(); renderSaved(); updateCounts(); updateStart();
+  paintMute(); renderStations(); renderVibes(); renderSearchEmpty(); paintNav(); paintChrome(); paintSource(); renderProfile(); renderSaved(); updateCounts(); updateStart();
   state.pool = buildPool([...state.stations]);
   feed.innerHTML = skeleton();
 
   // Shared link: #clip=<id> puts that clip first
-  const m = location.hash.match(/clip=(\d+)/);
+  const m = location.hash.match(/clip=([A-Za-z0-9:_-]+)/);
   if (m) {
     try {
       const c = await provider.lookup(m[1]);
