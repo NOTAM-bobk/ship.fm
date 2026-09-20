@@ -157,6 +157,7 @@
     box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 40%, transparent);
   }
   .chip.wiggle { animation: wiggle .45s var(--spring); }
+  .chip.added { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
   .vibe { height: 34px; padding: 0 14px; font-size: 13px; }
   @keyframes wiggle {
     0%, 100% { transform: rotate(0); }
@@ -175,31 +176,33 @@
     position: relative; display: flex; flex-direction: column; gap: 16px;
     width: 100%; max-width: 440px; height: 100%; padding: 16px 16px 20px;
   }
-  @media (min-width: 768px) { .slide-in { max-width: 480px; border-inline: 1px solid var(--line); } }
   .slide-in.msg { align-items: center; justify-content: center; text-align: center; gap: 12px; }
 
   .art-box { flex: 1 1 0; min-height: 0; display: flex; align-items: center; justify-content: center; container-type: size; }
   .art {
     position: relative; display: block; padding: 0; overflow: hidden;
     width: min(100%, 50dvh); aspect-ratio: 1;
-    border: 1px solid var(--line); border-radius: 20px; background: var(--surface-2);
+    border-radius: 28px; background: transparent;
     transition: transform .15s var(--spring), box-shadow .2s;
   }
   @supports (width: 1cqw) { .art { width: min(100cqw, 100cqh); height: min(100cqw, 100cqh); aspect-ratio: auto; } }
   button.art:active { transform: scale(.98); }
-  .slide.is-playing button.art { box-shadow: 0 12px 40px rgba(0,0,0,.18); }
+  .slide.is-playing .art { animation: artPulse 2.4s ease-in-out infinite; }
+  @keyframes artPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
   .art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; user-select: none; -webkit-user-drag: none; }
   .art img.broken, .tile-art img.broken { visibility: hidden; }
 
   .station-tag {
     position: absolute; left: 12px; top: 12px; padding: 4px 10px; border-radius: 999px;
-    background: var(--bg); border: 1px solid var(--line); color: var(--fg); font-size: 12px; font-weight: 600;
+    background: color-mix(in srgb, var(--bg) 72%, transparent); backdrop-filter: blur(8px);
+    color: var(--fg); font-size: 12px; font-weight: 600;
   }
   .eq {
     position: absolute; left: 12px; bottom: 12px; display: none; align-items: flex-end; gap: 2px;
     height: 28px; padding: 6px 8px; border-radius: 999px; background: var(--fg); box-sizing: border-box;
+    color: var(--bg);
   }
-  .eq i { display: block; width: 3px; height: 30%; border-radius: 1px; background: var(--bg); animation: eq .9s ease-in-out infinite; }
+  .eq i { display: block; width: 3px; height: 30%; border-radius: 1px; background: currentColor; animation: eq .9s ease-in-out infinite; }
   .eq i:nth-child(2) { animation-duration: .7s; animation-delay: -.3s; }
   .eq i:nth-child(3) { animation-duration: 1.1s; animation-delay: -.6s; }
   .eq i:nth-child(4) { animation-duration: .8s; animation-delay: -.1s; }
@@ -213,6 +216,50 @@
   }
   .slide.user-paused .paused-badge { opacity: 1; transform: none; }
 
+  /* Blurred art scrim behind the focused clip */
+  .art-scrim {
+    position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .25s;
+    filter: blur(28px) saturate(1.4) brightness(.55); transform: scale(1.25);
+    object-fit: cover; width: 100%; height: 100%;
+  }
+  .slide.on-stage .art-scrim, .slide.user-paused .art-scrim { opacity: 1; }
+
+  /* Per-clip action rail (Instagram-style, replaces the button row) */
+  .rail { display: flex; flex-direction: column; gap: 14px; align-items: center; }
+  .rail-btn {
+    display: grid; place-items: center; width: 46px; height: 46px; border-radius: 999px;
+    background: color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter: blur(10px);
+    border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+    color: var(--fg); transition: transform .15s var(--spring), background .12s, color .12s;
+  }
+  .rail-btn:hover { transform: scale(1.1); }
+  .rail-btn:active { transform: scale(.88); }
+  .rail-btn.on { color: var(--accent); }
+  .rail-btn.on svg { fill: currentColor; }
+  .rail-btn.bookmarked { background: var(--fg); color: var(--bg); }
+  .rail-lab { font-size: 11px; font-weight: 700; color: var(--muted); margin-top: -8px; }
+  .rail-dot {
+    display: grid; place-items: center; width: 46px; height: 46px; border-radius: 999px;
+    border: 1.5px dashed var(--line); color: var(--muted); font-weight: 800;
+    transition: transform .15s var(--spring), color .12s, border-color .12s;
+  }
+  .rail-dot:hover { transform: scale(1.1); color: var(--fg); border-color: var(--muted); }
+  .rail-count { text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); margin-top: -8px; }
+  .rail-pl {
+    display: grid; place-items: center; width: 46px; height: 46px; border-radius: 999px;
+    background: var(--accent); color: var(--on-accent);
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+
+  /* Playing-a-playlist queue bar */
+  .qbar {
+    position: absolute; left: 12px; right: 12px; bottom: 10px; z-index: 15;
+    display: flex; align-items: center; gap: 6px; padding: 8px 8px 8px 12px;
+    border-radius: 999px; border: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px rgba(0,0,0,.25); animation: toastIn .25s var(--spring);
+  }
+
   .burst { position: absolute; z-index: 5; pointer-events: none; color: var(--accent); animation: burst .75s ease-out forwards; }
 
   .meta { display: flex; align-items: center; gap: 10px; }
@@ -225,27 +272,21 @@
   .clip { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
   .clip .t { width: 32px; }
   .clip .t.end { text-align: right; }
-  .ticks { flex: 1; display: flex; align-items: center; gap: 3px; height: 44px; cursor: pointer; touch-action: pan-y; }
-  .ticks i { flex: 1; height: 14px; border-radius: 2px; background: var(--line); transition: background .12s, height .15s var(--spring); }
+  .ticks { flex: 1; display: flex; align-items: center; gap: 3px; height: 36px; cursor: pointer; touch-action: pan-y; }
+  .ticks i { flex: 1; height: 10px; border-radius: 2px; background: color-mix(in srgb, var(--fg) 15%, transparent); transition: background .12s, height .15s var(--spring); }
   .ticks i.on { background: var(--fg); }
   .ticks i.cur { background: var(--accent); height: 24px; }
   .ticks:hover i:not(.on):not(.cur) { background: var(--muted); opacity: .5; }
 
-  .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .act {
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    min-height: 48px; border: 1.5px solid var(--line); border-radius: 16px; background: var(--bg); color: var(--fg);
-    font-size: 14px; font-weight: 600; transition: background .12s, border-color .12s, color .12s, transform .15s var(--spring);
-  }
-  .act:hover { background: var(--surface-2); border-color: var(--muted); }
-  .act:active { transform: scale(.93); }
-  .act.like.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
-  .act.like.on svg { fill: currentColor; }
-  .act.save.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-  .act svg.pop { animation: pop .35s var(--spring); }
+  /* Range input (volume) */
+  .vol { appearance: none; -webkit-appearance: none; width: 130px; height: 26px; background: transparent; cursor: pointer; }
+  .vol::-webkit-slider-runnable-track { height: 8px; border-radius: 999px; background: var(--surface-2); }
+  .vol::-webkit-slider-thumb { -webkit-appearance: none; margin-top: -6px; width: 20px; height: 20px; border-radius: 999px; background: var(--fg); }
+  .vol::-moz-range-track { height: 8px; border-radius: 999px; background: var(--surface-2); }
+  .vol::-moz-range-thumb { width: 20px; height: 20px; border: 0; border-radius: 999px; background: var(--fg); }
 
   .hint {
-    position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 12px; color: var(--muted);
+    position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; font-size: 12px; color: var(--muted);
     animation: bob 1.8s ease-in-out infinite; pointer-events: none;
   }
   #feed.moved .hint { display: none; }
@@ -255,11 +296,29 @@
   .ring { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); }
 
   /* ---------- Library tabs ---------- */
-  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
-  .tab { position: relative; min-height: 44px; padding: 0 12px; font-size: 14px; color: var(--muted); }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .tab { position: relative; min-height: 44px; padding: 0 12px; font-size: 14px; color: var(--muted); flex: none; }
   .tab:hover { color: var(--fg); }
   .tab[aria-selected="true"] { color: var(--fg); font-weight: 600; }
   .tab[aria-selected="true"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 3px; border-radius: 999px; background: var(--accent); }
+
+  /* Playlist cards + rows */
+  .pl-cover {
+    position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: 1; overflow: hidden;
+    border-radius: 20px; background: var(--surface-2);
+    border: 1px solid color-mix(in srgb, var(--pc, var(--accent)) 35%, var(--line));
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--pc, var(--accent)) 25%, transparent);
+    transition: transform .15s var(--spring), border-color .12s;
+    font-size: 34px;
+  }
+  .pl-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .35; }
+  .pl-cover > span { position: relative; }
+  .pl-cover:hover { transform: scale(1.02); }
+  .pl-cover:active { transform: scale(.96); }
+  .pl-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+  .pl-row + .pl-row { border-top: 1px solid var(--line); }
+  .pl-row-art { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); overflow: hidden; }
+  .pl-row-art img { width: 100%; height: 100%; object-fit: cover; }
 
   /* ---------- Tiles (search + library grids) ---------- */
   .tile-art {
@@ -438,7 +497,6 @@
       </nav>
       <div class="ml-auto flex items-center">
         <button data-nav="search" class="icon-btn md:hidden" aria-label="Search" data-i="search"></button>
-        <button id="muteBtn" class="icon-btn" aria-label="Mute"></button>
         <button id="settingsBtn" class="icon-btn" aria-label="Settings" data-i="settings"></button>
       </div>
     </div>
@@ -502,7 +560,7 @@
           <div class="grid flex-1 grid-cols-3 text-center">
             <div><p class="stat-num" id="stHeard">0</p><p class="stat-lab">Clips</p></div>
             <div><p class="stat-num" id="stLiked">0</p><p class="stat-lab">Liked</p></div>
-            <div><p class="stat-num" id="stSaved">0</p><p class="stat-lab">Saved</p></div>
+            <div><p class="stat-num" id="stSaved">0</p><p class="stat-lab">In playlists</p></div>
           </div>
         </div>
         <div class="mt-4">
@@ -533,9 +591,10 @@
         </div>
 
         <div class="tabs mt-6" role="tablist" aria-label="Library">
-          <button class="tab" role="tab" data-tab="saved" aria-selected="true">Saved <span class="count-pill mono">0</span></button>
+          <button class="tab" role="tab" data-tab="saved" aria-selected="true">Playlists <span class="count-pill mono">0</span></button>
           <button class="tab" role="tab" data-tab="liked" aria-selected="false">Liked <span class="count-pill mono">0</span></button>
         </div>
+        <div id="plDetail" hidden></div>
         <div id="savedGrid" class="mt-6"></div>
       </div>
     </section>
@@ -592,6 +651,22 @@
       <button class="seg-btn" data-theme="dark">Dark</button>
     </div>
 
+    <p class="set-h">Sound</p>
+    <label class="row" for="setMuted">
+      <span><span class="row-t">Mute all audio</span><span class="row-s">Clips and previews play silently</span></span>
+      <input type="checkbox" id="setMuted" class="sw">
+    </label>
+    <label class="row" for="setVolume">
+      <span><span class="row-t">Volume</span></span>
+      <input type="range" id="setVolume" class="vol" min="0" max="1" step="0.01" aria-label="Clip volume">
+    </label>
+
+    <p class="set-h">Playback</p>
+    <label class="row" for="setAuto">
+      <span><span class="row-t">Auto-scroll</span><span class="row-s">Glides to the next clip when one ends</span></span>
+      <input type="checkbox" id="setAuto" class="sw">
+    </label>
+
     <p class="set-h">Feedback</p>
     <label class="row" for="setHaptics">
       <span><span class="row-t">Haptics</span><span class="row-s">Vibrate on likes, saves and skips</span></span>
@@ -612,7 +687,7 @@
       <div class="stat-card"><p class="stat-num" id="sHeard">0</p><p class="stat-lab">Clips heard</p></div>
       <div class="stat-card"><p class="stat-num" id="sStreak">0</p><p class="stat-lab">Day streak</p></div>
       <div class="stat-card"><p class="stat-num" id="sLikes">0</p><p class="stat-lab">Likes</p></div>
-      <div class="stat-card"><p class="stat-num" id="sSaves">0</p><p class="stat-lab">Saved</p></div>
+      <div class="stat-card"><p class="stat-num" id="sSaves">0</p><p class="stat-lab">In playlists</p></div>
       <div class="stat-card"><p class="stat-num" id="sMins">0</p><p class="stat-lab">Minutes</p></div>
     </div>
 
@@ -629,9 +704,41 @@
       <li><span class="kbd">Space</span> play or pause</li>
       <li><span class="kbd">M</span> mute</li>
       <li><span class="kbd">L</span> like</li>
-      <li><span class="kbd">S</span> save</li>
+      <li><span class="kbd">S</span> playlists</li>
       <li><span class="kbd">/</span> search</li>
     </ul>
+  </div>
+</dialog>
+
+<!-- Add to playlist -->
+<dialog id="addPlDlg" aria-labelledby="addPlHeading">
+  <div class="p-5">
+    <div class="flex items-center justify-between">
+      <h2 id="addPlHeading" class="round text-base font-bold tracking-tight">Add to playlist</h2>
+      <button class="icon-btn -mr-2" data-close aria-label="Close" data-i="x"></button>
+    </div>
+    <div class="mt-4 flex items-center gap-3 rounded-2xl border border-line p-3">
+      <img id="addPlArt" class="h-12 w-12 rounded-xl border border-line object-cover" alt="">
+      <div class="min-w-0">
+        <p id="addPlTitle" class="truncate text-sm font-semibold"></p>
+        <p id="addPlArtist" class="truncate text-sm text-muted"></p>
+      </div>
+    </div>
+    <div id="addPlList" class="mt-3 max-h-56 overflow-y-auto"></div>
+    <button id="addPlNew" class="btn mt-3 w-full" style="border-color:var(--accent);color:var(--accent)"><span data-i="listPlus" data-s="16"></span><span>New playlist</span></button>
+  </div>
+</dialog>
+
+<!-- New playlist -->
+<dialog id="plNewDlg" aria-labelledby="plNewHeading">
+  <div class="p-5">
+    <div class="flex items-center justify-between">
+      <h2 id="plNewHeading" class="round text-base font-bold tracking-tight">New playlist</h2>
+      <button class="icon-btn -mr-2" data-close aria-label="Close" data-i="x"></button>
+    </div>
+    <input id="plNewName" maxlength="40" placeholder="Playlist name" aria-label="Playlist name" class="mt-4 w-full rounded-2xl border border-line bg-surface px-4 text-base" style="min-height:48px">
+    <div id="plEmojiRow" class="mt-3 flex flex-wrap gap-2"></div>
+    <button id="plCreate" class="btn-primary round mt-4 w-full">Create playlist</button>
   </div>
 </dialog>
 
@@ -660,7 +767,7 @@ const store = {
 /* =====================================================================
    Prefs, stats, gamification
    ===================================================================== */
-const prefs = Object.assign({ theme: 'system', haptics: true, sfx: true, celebrate: true }, store.get('snip:prefs', {}));
+const prefs = Object.assign({ theme: 'system', haptics: true, sfx: true, celebrate: true, muted: false, volume: 0.85, auto: false }, store.get('snip:prefs', {}));
 const savePrefs = () => store.set('snip:prefs', prefs);
 const stats = Object.assign({ xp: 0, heard: 0, seconds: 0, genres: {}, streak: 0, best: 0, lastDay: null }, store.get('snip:stats', {}));
 const saveStats = () => store.set('snip:stats', stats);
@@ -770,6 +877,11 @@ const I = {
   search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
   user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
   zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  listPlus: '<path d="M11 12H3"/><path d="M16 6H3"/><path d="M16 18H3"/><path d="M19 10v4"/><path d="M17 12h4"/>',
+  listMusic: '<path d="M21 15V6"/><path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/><path d="M12 12H3"/><path d="M16 6H3"/><path d="M12 18H3"/>',
+  pencil: '<path d="M21.17 6.83a2.85 2.85 0 0 0-4-4L3 17v4h4Z"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  shuffle: '<path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/>',
   sparkles: '<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>'
 };
 const icon = (n, { fill = false, size = 20, cls = '' } = {}) =>
@@ -864,15 +976,18 @@ const state = {
   clips: [], active: 0, pool: [], cursor: 0, seen: new Set(), token: 0,
   loading: false, done: false, status: 'loading', retryAfter: 0,
   started: false, userPaused: false, currentId: null, currentClip: null, lastFilled: -1, retried: {}, preloaded: null,
-  muted: store.get('snip:muted', false),
   liked: store.get('snip:liked', {}),
-  saved: store.get('snip:saved', {}),
+  playlists: [],
+  queue: null,
+  plView: null,
+  addPl: null,
   searchTerm: '', searchResults: [], searchMap: {}, searching: false,
   counted: new Set(), lastT: 0
 };
 if (!state.stations.size) state.stations = new Set(['foryou']);
 
-const findClip = id => state.clips.find(c => c.id === id) || state.saved[id] || state.liked[id] || state.searchMap[id];
+const playlistOf = id => state.playlists.filter(p => p.items.some(it => it.id === id));
+const findClip = id => state.clips.find(c => c.id === id) || state.liked[id] || state.searchMap[id] || state.playlists.flatMap(p => p.items).find(it => it.id === id);
 const pick = c => ({ id: c.id, title: c.title, artist: c.artist, album: c.album, art: c.art, audio: c.audio, genre: c.genre, explicit: c.explicit, station: c.station });
 
 /* =====================================================================
@@ -882,6 +997,7 @@ const feed = $('#feed'), viewFeed = $('#viewFeed'), viewSearch = $('#viewSearch'
 const startEl = $('#start'), startBtn = $('#startBtn'), startCopy = $('#startCopy');
 const stationsEl = $('#stations'), toasts = $('#toasts');
 const shareDlg = $('#shareDlg'), settingsDlg = $('#settingsDlg');
+const addPlDlg = $('#addPlDlg'), plNewDlg = $('#plNewDlg');
 const searchInput = $('#searchInput'), searchClear = $('#searchClear'), searchMeta = $('#searchMeta');
 const searchGrid = $('#searchGrid'), vibesEl = $('#vibes');
 const coarse = matchMedia('(pointer: coarse)').matches;
@@ -891,12 +1007,13 @@ const START_COPY = 'Scroll through short clips, heart the ones you love, and sav
    Audio: one element, reused, so mobile browsers keep it unlocked
    ===================================================================== */
 const audio = new Audio();
-audio.preload = 'auto'; audio.loop = true; audio.muted = state.muted;
+audio.preload = 'auto'; audio.loop = true; audio.muted = !!prefs.muted; audio.volume = typeof prefs.volume === 'number' ? prefs.volume : 0.85;
 audio.setAttribute('playsinline', '');
 const preloader = new Audio(); preloader.preload = 'auto'; preloader.muted = true;
 
 function playClip(c) {
   if (state.currentId !== c.id) { state.currentId = c.id; state.currentClip = c; audio.src = c.audio; state.lastFilled = -1; state.lastT = 0; }
+  audio.loop = state.queue && state.queue.id ? false : !prefs.auto;
   const p = audio.play();
   if (p && p.catch) p.catch(err => {
     if (err.name === 'NotAllowedError') { state.userPaused = true; paintPlaying(); toast('Tap the artwork to play.'); }
@@ -911,6 +1028,13 @@ function togglePlay() {
 function seekBy(d) { const dur = audio.duration && isFinite(audio.duration) ? audio.duration : 30; audio.currentTime = Math.max(0, Math.min(dur - .1, audio.currentTime + d)); state.lastFilled = -1; }
 
 ['play', 'pause', 'ended', 'emptied'].forEach(ev => audio.addEventListener(ev, paintPlaying));
+audio.addEventListener('ended', () => {
+  if (state.queue && state.queue.id) { nextInQueue(1); return; }
+  if (prefs.auto && state.started && state.view === 'feed' && !state.userPaused) {
+    const next = $(`.slide[data-index="${state.active + 1}"]`, feed);
+    if (next) { go(1); } else { audio.currentTime = 0; audio.play().catch(() => {}); }
+  }
+});
 audio.addEventListener('timeupdate', onTime);
 audio.addEventListener('error', async () => {
   const id = state.currentId; if (!id) return;
@@ -968,39 +1092,47 @@ function paintPlaying() {
   if (playing) $$(`.slide[data-id="${state.currentId}"], .tile[data-id="${state.currentId}"]`).forEach(el => el.classList.add('is-playing'));
   const s = activeSlide();
   if (state.userPaused && s) s.classList.add('user-paused');
+  if (state.currentId !== state.lastAutoId) { state.autoFired = false; state.lastAutoId = state.currentId; }
 }
 /* =====================================================================
    Rendering: feed
    ===================================================================== */
-const likeInner = id => { const on = !!state.liked[id]; return icon('heart', { fill: on }) + `<span class="mono">${fmt(baseLikes(id) + (on ? 1 : 0))}</span>`; };
-const saveInner = id => { const on = !!state.saved[id]; return icon('bookmark', { fill: on }) + `<span>${on ? 'Saved' : 'Save'}</span>`; };
 
 function slideHTML(c, i) {
-  const liked = !!state.liked[c.id], saved = !!state.saved[c.id];
+  const liked = !!state.liked[c.id];
+  const saved = playlistOf(c.id).length;
   return `
   <article class="slide" data-id="${c.id}" data-index="${i}" aria-label="${esc(c.title)} by ${esc(c.artist)}">
     <div class="slide-in">
       <div class="art-box">
         <button class="art" aria-label="Play or pause ${esc(c.title)}">
+          <img class="art-scrim" src="${esc(c.art)}" alt="" draggable="false" loading="lazy" aria-hidden="true">
           <img src="${esc(c.art)}" alt="Cover art for ${esc(c.album)}" draggable="false" loading="${i < 2 ? 'eager' : 'lazy'}">
           <span class="station-tag">${esc(c.station || c.genre || 'Clip')}</span>
           <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
           <span class="paused-badge">${icon('play', { fill: true, size: 28 })}</span>
         </button>
       </div>
-      <div class="meta">
-        <div><h2 class="title">${esc(c.title)}</h2><p class="artist">${esc(c.artist)}</p></div>
-        ${c.explicit ? '<span class="tag-e" title="Explicit">E</span>' : ''}
-      </div>
-      <div class="clip mono">
-        <span class="t" data-cur>0:00</span>
-        <div class="ticks" role="slider" tabindex="0" aria-label="Seek within the 30-second clip" aria-valuemin="0" aria-valuemax="30" aria-valuenow="0">${'<i></i>'.repeat(30)}</div>
-        <span class="t end">0:30</span>
-      </div>
-      <div class="actions">
-        <button class="act like ${liked ? 'on' : ''}" data-act="like" data-id="${c.id}" aria-pressed="${liked}" aria-label="${liked ? 'Unlike' : 'Like'}">${likeInner(c.id)}</button>
-        <button class="act save ${saved ? 'on' : ''}" data-act="save" data-id="${c.id}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from saved' : 'Save'}">${saveInner(c.id)}</button>
-        <button class="act" data-act="share" data-id="${c.id}" aria-label="Share">${icon('share')}<span>Share</span></button>
+      <div class="flex flex-1 items-end justify-between gap-3">
+        <div class="min-w-0 flex-1">
+          <div class="meta">
+            <div><h2 class="title">${esc(c.title)}</h2><p class="artist">${esc(c.artist)}</p></div>
+            ${c.explicit ? '<span class="tag-e" title="Explicit">E</span>' : ''}
+          </div>
+          <div class="clip mono mt-3">
+            <span class="t" data-cur>0:00</span>
+            <div class="ticks" role="slider" tabindex="0" aria-label="Seek within the 30-second clip" aria-valuemin="0" aria-valuemax="30" aria-valuenow="0">${'<i></i>'.repeat(30)}</div>
+            <span class="t end">0:30</span>
+          </div>
+        </div>
+        <div class="rail flex-none pb-1">
+          <button class="rail-btn like ${liked ? 'on' : ''}" data-act="like" data-id="${c.id}" aria-pressed="${liked}" aria-label="${liked ? 'Unlike' : 'Like'}">${icon('heart')}</button>
+          <p class="rail-count mono">${fmt(baseLikes(c.id) + (liked ? 1 : 0))}</p>
+          <button class="rail-btn ${saved ? 'on bookmarked' : ''}" data-act="addpl" data-id="${c.id}" aria-label="Add to playlist">${icon('bookmark', { fill: saved })}</button>
+          <p class="rail-lab">${saved ? 'In playlists' : 'Add'}</p>
+          <button class="rail-btn" data-act="share" data-id="${c.id}" aria-label="Share">${icon('share')}</button>
+          <button class="rail-pl" data-act="mix" data-id="${c.id}" aria-label="Play songs like this">${icon('sparkles', { size: 18 })}</button>
+        </div>
       </div>
       ${i === 0 ? `<p class="hint" aria-hidden="true">${coarse ? 'Swipe up for the next clip' : 'Scroll or press J for the next clip'}</p>` : ''}
     </div>
@@ -1013,7 +1145,6 @@ const skeleton = (cls = '') => `
       <div class="sk" style="height:22px;width:62%"></div>
       <div class="sk" style="height:14px;width:36%;margin-top:-8px"></div>
       <div class="sk" style="height:44px"></div>
-      <div class="actions"><div class="sk" style="height:48px"></div><div class="sk" style="height:48px"></div><div class="sk" style="height:48px"></div></div>
     </div>
   </article>`;
 const messageSlide = (iconName, title, body, btn) => `
@@ -1025,6 +1156,106 @@ const messageSlide = (iconName, title, body, btn) => `
       ${btn ? `<button class="btn mt-2" data-act="${btn.act}">${esc(btn.label)}</button>` : ''}
     </div>
   </article>`;
+
+/* ---- Playlists ---- */
+const plSave = () => store.set('snip:playlists', state.playlists);
+const saveClipTo = (id, plId) => {
+  const c = findClip(id), pl = state.playlists.find(p => p.id === plId); if (!c || !pl) return;
+  if (!pl.items.some(it => it.id === id)) { pl.items.push({ ...pick(c), at: Date.now() }); plSave(); syncClip(id); renderSaved(); }
+};
+const removeClipFrom = (id, plId) => {
+  const pl = state.playlists.find(p => p.id === plId); if (!pl) return;
+  const before = pl.items.length;
+  pl.items = pl.items.filter(it => it.id !== id);
+  if (pl.items.length !== before) {
+    plSave(); syncClip(id);
+    if (state.queue && state.queue.id === plId) { state.queue.items = pl.items.slice(); if (state.queue.pos >= state.queue.items.length) stopQueue(); else paintQueueBar(); }
+    renderSaved();
+    toast('Removed from ' + pl.name + '.');
+  }
+};
+function openAddPl(id) {
+  const c = findClip(id); if (!c) return;
+  state.addPl = id;
+  $('#addPlArt').src = c.art; $('#addPlTitle').textContent = c.title; $('#addPlArtist').textContent = c.artist;
+  renderAddPlList(); addPlDlg.showModal();
+}
+function renderAddPlList() {
+  const id = state.addPl;
+  $('#addPlList').innerHTML = state.playlists.map(pl => {
+    const inPl = pl.items.some(it => it.id === id);
+    return `<button class="pl-row w-full text-left" data-pltoggle="${pl.id}">
+      <span class="pl-row-art">${pl.emoji || '🎵'}</span>
+      <span class="min-w-0 flex-1"><span class="block truncate text-sm font-semibold">${esc(pl.name)}</span>
+      <span class="block text-xs text-muted">${pl.items.length} clip${pl.items.length === 1 ? '' : 's'}</span></span>
+      <span class="chip ${inPl ? 'added' : ''}" style="height:30px;padding:0 12px;font-size:12px">${inPl ? '✓ Added' : 'Add'}</span>
+    </button>`;
+  }).join('') || '<p class="py-6 text-center text-sm text-muted">No playlists yet — create one below.</p>';
+}
+function newPlaylist(name, emoji, firstClipId) {
+  name = (name || '').trim() || 'My playlist';
+  const pl = { id: 'pl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name.slice(0, 40), emoji: emoji || '🎵', at: Date.now(), items: [] };
+  if (firstClipId) { const c = findClip(firstClipId); if (c) pl.items.push({ ...pick(c), at: Date.now() }); }
+  state.playlists.unshift(pl); plSave();
+  buzz([12, 40, 12]); blip('save'); gainXp(5);
+  toast('Playlist “' + pl.name + '” created.');
+  renderSaved(); updateCounts();
+  return pl;
+}
+function playQueue(plId, shuffled) {
+  const pl = state.playlists.find(p => p.id === plId); if (!pl || !pl.items.length) { toast('This playlist is empty.'); return; }
+  const items = pl.items.slice();
+  state.queue = { id: pl.id, name: (pl.emoji || '🎵') + ' ' + pl.name, items, pos: 0 };
+  if (shuffled) state.queue.items = shuffle(items.slice());
+  state.started = true; startEl.hidden = true;
+  state.active = 0; state.clips = state.queue.items.map(c => ({ ...c }));
+  state.seen = new Set(state.clips.map(c => c.id));
+  state.cursor = 0; state.token++; state.loading = false; state.done = true; state.status = 'ready'; updateStart();
+  io.disconnect(); feed.classList.remove('moved');
+  feed.innerHTML = state.clips.map((c, i) => slideHTML(c, i)).join('');
+  $$('.slide[data-index]', feed).forEach(el => io.observe(el));
+  audio.loop = false;
+  showView('feed');
+  paintQueueBar();
+  activate(0);
+  buzz([15, 40, 15]); blip('tap');
+  toast('Playing ' + pl.name + (shuffled ? ' · shuffled' : ''));
+}
+function stopQueue() {
+  state.queue = null;
+  audio.pause(); audio.loop = true; state.currentId = null; state.currentClip = null; state.userPaused = false;
+  paintQueueBar();
+  setStation();
+}
+function nextInQueue(d) {
+  const q = state.queue; if (!q) return false;
+  const next = q.pos + d;
+  if (next < 0) { audio.currentTime = 0; return true; }
+  if (next >= q.items.length) { stopQueue(); toast('Playlist finished 🎉'); return true; }
+  q.pos = next;
+  const el = $(`.slide[data-index="${q.pos}"]`, feed);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  paintQueueBar();
+  return true;
+}
+const queueBarHTML = () => {
+  if (!state.queue || !state.queue.id || !state.queue.items.length) return '';
+  const pos = Math.min(state.queue.pos + 1, state.queue.items.length);
+  return `
+  <div class="qbar" id="queueBar">
+    <span class="eq" style="display:flex"><i></i><i></i><i></i><i></i></span>
+    <span class="min-w-0 flex-1 truncate text-xs font-semibold" title="${esc(state.queue.name)}">${esc(state.queue.name)} · ${pos}/${state.queue.items.length}</span>
+    <button class="icon-btn !h-8 !w-8" data-queue-act="shuffle" aria-label="Shuffle playlist">${icon('shuffle', { size: 16 })}</button>
+    <button class="icon-btn !h-8 !w-8" data-queue-act="stop" aria-label="Stop playlist and return to feed">${icon('x', { size: 16 })}</button>
+  </div>`;
+};
+const paintQueueBar = () => {
+  const bar = $('#queueBar');
+  if (state.queue && state.queue.id) {
+    const html = queueBarHTML();
+    if (bar) bar.outerHTML = html; else viewFeed.insertAdjacentHTML('beforeend', html);
+  } else if (bar) bar.remove();
+};
 
 const io = new IntersectionObserver(entries => {
   for (const e of entries) if (e.isIntersecting && e.intersectionRatio >= .6) activate(+e.target.dataset.index);
@@ -1044,6 +1275,7 @@ function activate(i) {
   const c = state.clips[i]; if (!c) return;
   if (i !== state.active) { const prev = activeSlide(); if (prev) resetSlide(prev); state.userPaused = false; }
   state.active = i;
+  if (state.queue && state.queue.id) { state.queue.pos = i; paintQueueBar(); }
   $$('.slide.active', feed).forEach(el => el.classList.remove('active'));
   const el = activeSlide(); if (el) el.classList.add('active');
   if (i > 0) feed.classList.add('moved');
@@ -1113,6 +1345,7 @@ async function loadMore() {
 }
 
 function setStation() {
+  if (state.queue) { state.queue = null; paintQueueBar(); audio.loop = true; }
   audio.pause(); state.currentId = null; state.currentClip = null; state.userPaused = false;
   state.token++; state.clips = []; state.seen = new Set(); state.cursor = 0; state.active = 0;
   state.pool = buildPool([...state.stations]); state.loading = false; state.done = false; state.status = 'loading'; state.retryAfter = 0;
@@ -1137,31 +1370,23 @@ function likeClip(id, pt) {
     gainXp(5, { pt }); touchStreak();
   }
 }
-function saveClip(id, pt) {
-  const wasOn = !!state.saved[id];
-  toggleSave(id);
-  if (!wasOn && state.saved[id]) {
-    buzz([12, 50, 12, 50, 30]); blip('save');
-    gainXp(5, { pt }); touchStreak();
-  }
-}
 function paintLike(b, id, animate) {
   const on = !!state.liked[id];
   b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Unlike' : 'Like');
-  b.innerHTML = likeInner(id);
-  if (on && animate) { const svg = $('svg', b); svg.classList.add('pop'); }
+  const svg = $('svg', b); if (svg) svg.style.fill = on ? 'currentColor' : 'none';
+  if (on && animate && svg) { svg.classList.add('pop'); setTimeout(() => svg.classList.remove('pop'), 400); }
 }
-function paintSave(b, id) {
-  const on = !!state.saved[id];
-  b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Remove from saved' : 'Save');
-  b.innerHTML = saveInner(id);
-}
-function syncClip(id, animate) {
-  $$(`[data-act="like"][data-id="${id}"]`).forEach(b => paintLike(b, id, animate));
-  $$(`[data-act="save"][data-id="${id}"]`).forEach(b => paintSave(b, id));
+function syncClip(id) {
+  $$(`[data-act="like"][data-id="${id}"]`).forEach(b => paintLike(b, id, true));
+  $$(`.rail [data-act="addpl"][data-id="${id}"]`).forEach(b => {
+    const inPl = playlistOf(id).length;
+    b.classList.toggle('on', inPl); b.classList.toggle('bookmarked', inPl);
+    b.setAttribute('aria-label', inPl ? 'In playlists — manage' : 'Add to playlist');
+    const lab = b.nextElementSibling; if (lab && lab.classList.contains('rail-lab')) lab.textContent = inPl ? 'In playlists' : 'Add';
+  });
 }
 function updateCounts() {
-  const n = Object.keys(state.saved).length;
+  const n = state.playlists.reduce((a, p) => a + p.items.length, 0);
   $$('[data-saved-count]').forEach(el => { el.textContent = n ? String(n) : ''; });
 }
 function toggleLike(id, animate = true) {
@@ -1169,13 +1394,6 @@ function toggleLike(id, animate = true) {
   if (state.liked[id]) delete state.liked[id]; else state.liked[id] = { ...pick(c), at: Date.now() };
   store.set('snip:liked', state.liked);
   syncClip(id, animate);
-}
-function toggleSave(id) {
-  const c = findClip(id); if (!c) return;
-  if (state.saved[id]) { delete state.saved[id]; toast('Removed from saved.'); }
-  else { state.saved[id] = { ...pick(c), at: Date.now() }; toast('Saved. Find it in your library.'); }
-  store.set('snip:saved', state.saved);
-  syncClip(id); updateCounts();
 }
 function burst(art, e) {
   const r = art.getBoundingClientRect();
@@ -1223,7 +1441,7 @@ function renderSearchEmpty() {
 }
 function renderSearch() {
   if (state.view !== 'search' || !state.searchResults.length) return;
-  searchGrid.innerHTML = `<div class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3">${state.searchResults.map(tileHTML).join('')}</div>`;
+  searchGrid.innerHTML = `<div class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3">${state.searchResults.map(c => tileHTML(c, 'search')).join('')}</div>`;
   paintPlaying();
 }
 async function doSearch(term) {
@@ -1261,8 +1479,10 @@ async function doSearch(term) {
 /* =====================================================================
    Library tiles + Saved grid
    ===================================================================== */
-function tileHTML(c) {
-  const isSaved = state.tab === 'saved';
+function tileHTML(c, mode = 'liked') {
+  const act = mode === 'liked' ? 'unlike' : 'addpl';
+  const lab = mode === 'liked' ? 'Remove like' : 'Add to playlist';
+  const icn = mode === 'liked' ? 'heart' : 'bookmark';
   return `
   <div class="tile" data-id="${c.id}">
     <button class="tile-art" data-act="tile" data-id="${c.id}" aria-label="Play ${esc(c.title)} by ${esc(c.artist)}">
@@ -1276,24 +1496,88 @@ function tileHTML(c) {
         <p class="truncate text-sm font-semibold">${esc(c.title)}</p>
         <p class="truncate text-sm text-muted">${esc(c.artist)}</p>
       </div>
-      <button class="icon-btn !h-8 !w-8 -mr-2 -mt-1.5 ${isSaved ? 'text-fg' : 'text-accent'}" data-act="${isSaved ? 'unsave' : 'unlike'}" data-id="${c.id}" aria-label="${isSaved ? 'Remove from saved' : 'Remove like'}">${icon(isSaved ? 'bookmark' : 'heart', { fill: true, size: 18 })}</button>
+      <button class="icon-btn !h-8 !w-8 -mr-2 -mt-1.5 ${mode === 'liked' ? 'text-accent' : ''}" data-act="${act}" data-id="${c.id}" aria-label="${lab}">${icon(icn, { fill: mode === 'liked', size: 18 })}</button>
     </div>
   </div>`;
 }
+const PL_EMOJIS = ['🎵', '❤️', '🔥', '🌙', '💃', '🎸', '🎧', '☀️', '🌧️', '🪩', '✨', '🚗'];
 function renderSaved() {
   $$('[data-tab]').forEach(t => {
     t.setAttribute('aria-selected', String(t.dataset.tab === state.tab));
-    $('.count-pill', t).textContent = String(Object.keys(state[t.dataset.tab]).length);
+    $('.count-pill', t).textContent = t.dataset.tab === 'saved'
+      ? String(state.playlists.length)
+      : String(Object.keys(state.liked).length);
   });
-  const list = Object.values(state[state.tab]).sort((a, b) => b.at - a.at);
-  const grid = $('#savedGrid');
+  const detail = $('#plDetail'), grid = $('#savedGrid');
+  if (state.tab === 'saved' && state.plView) {
+    const pl = state.playlists.find(p => p.id === state.plView);
+    if (pl) {
+      detail.hidden = false; grid.hidden = true;
+      detail.innerHTML = `
+        <button class="btn !min-h-10 mb-4 text-sm" data-act="plback">← All playlists</button>
+        <div class="flex items-center gap-4">
+          <div class="pl-cover !h-20 !w-20" style="--pc:${PALETTE[pl.name.length % PALETTE.length]}"><span>${pl.emoji || '🎵'}</span></div>
+          <div class="min-w-0 flex-1">
+            <h2 class="round truncate text-xl font-bold tracking-tight">${esc(pl.name)}</h2>
+            <p class="text-sm text-muted">${pl.items.length} clip${pl.items.length === 1 ? '' : 's'} · ${fmtTime(pl.items.length * 30)} total</p>
+          </div>
+          <button class="icon-btn" data-act="plrename" aria-label="Rename playlist">${icon('pencil', { size: 18 })}</button>
+          <button class="icon-btn !text-accent" data-act="pldelete" aria-label="Delete playlist">${icon('trash', { size: 18 })}</button>
+        </div>
+        <div class="mt-4 flex gap-2">
+          <button class="btn-primary round flex-1 !min-h-11 text-sm" data-act="plplay">Play all</button>
+          <button class="btn flex-1" data-act="plshuffle">${icon('shuffle', { size: 16 })} Shuffle</button>
+        </div>
+        <div class="mt-4">
+          ${pl.items.length ? pl.items.map(c => `
+            <div class="pl-row">
+              <span class="pl-row-art"><img src="${esc(c.art)}" alt="" loading="lazy"></span>
+              <span class="min-w-0 flex-1"><span class="block truncate text-sm font-semibold">${esc(c.title)}</span>
+              <span class="block truncate text-xs text-muted">${esc(c.artist)}</span></span>
+              <button class="icon-btn !h-8 !w-8" data-act="pltile" data-id="${c.id}" aria-label="Play ${esc(c.title)}">${icon('play', { size: 16, fill: true })}</button>
+              <button class="icon-btn !h-8 !w-8 !text-accent" data-act="plremove" data-id="${c.id}" aria-label="Remove from playlist">${icon('x', { size: 16 })}</button>
+            </div>`).join('') : '<p class="py-8 text-center text-sm text-muted">This playlist is empty. Add clips from the feed or search.</p>'}
+        </div>`;
+      return;
+    }
+    state.plView = null;
+  }
+  detail.hidden = true; grid.hidden = false;
+  if (state.tab === 'saved') {
+    if (!state.playlists.length) {
+      grid.innerHTML = `
+        <div class="flex flex-col items-center rounded-3xl border border-dashed border-line px-6 py-16 text-center">
+          <div class="ring">${icon('listMusic', { size: 22 })}</div>
+          <h2 class="round mt-4 text-base font-bold tracking-tight">No playlists yet</h2>
+          <p class="mt-1 max-w-[32ch] text-sm leading-relaxed text-muted">Tap the bookmark on any clip to build your first playlist.</p>
+          <button class="btn mt-5" data-nav="feed">Find something to save</button>
+        </div>`;
+      return;
+    }
+    grid.innerHTML = `
+      <button class="btn mb-5 w-full" data-act="plnew">${icon('listPlus', { size: 18 })} New playlist</button>
+      <div class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3">
+        ${state.playlists.map(pl => `
+          <div class="tile">
+            <button class="pl-cover" data-act="plopen" data-pl="${pl.id}" style="--pc:${PALETTE[pl.name.length % PALETTE.length]}" aria-label="Open ${esc(pl.name)}">
+              ${pl.items[0] ? `<img src="${esc(pl.items[0].art)}" alt="" loading="lazy">` : ''}
+              <span>${pl.emoji || '🎵'}</span>
+            </button>
+            <div class="mt-3">
+              <p class="truncate text-sm font-semibold">${esc(pl.name)}</p>
+              <p class="text-xs text-muted">${pl.items.length} clip${pl.items.length === 1 ? '' : 's'}</p>
+            </div>
+          </div>`).join('')}
+      </div>`;
+    return;
+  }
+  const list = Object.values(state.liked).sort((a, b) => b.at - a.at);
   if (!list.length) {
-    const saved = state.tab === 'saved';
     grid.innerHTML = `
       <div class="flex flex-col items-center rounded-3xl border border-dashed border-line px-6 py-16 text-center">
-        <div class="ring">${icon(saved ? 'bookmark' : 'heart', { size: 22 })}</div>
-        <h2 class="round mt-4 text-base font-bold tracking-tight">${saved ? 'Nothing saved yet' : 'No hearts yet'}</h2>
-        <p class="mt-1 max-w-[32ch] text-sm leading-relaxed text-muted">${saved ? 'Tap Save on any clip and it lands here, ready for later.' : 'Heart a clip, or double-tap the artwork, to collect it here.'}</p>
+        <div class="ring">${icon('heart', { size: 22 })}</div>
+        <h2 class="round mt-4 text-base font-bold tracking-tight">No hearts yet</h2>
+        <p class="mt-1 max-w-[32ch] text-sm leading-relaxed text-muted">Heart a clip, or double-tap the artwork, to collect it here.</p>
         <button class="btn mt-5" data-nav="feed">Find something new</button>
       </div>`;
     return;
@@ -1310,7 +1594,7 @@ function renderProfile() {
   $('#pLevelBadge').textContent = 'Lvl ' + li.lvl;
   $('#stHeard').textContent = fmt(stats.heard);
   $('#stLiked').textContent = fmt(Object.keys(state.liked).length);
-  $('#stSaved').textContent = fmt(Object.keys(state.saved).length);
+  $('#stSaved').textContent = fmt(state.playlists.reduce((n, p) => n + p.items.length, 0));
   $('#pXpBar').style.width = Math.round(li.pct * 100) + '%';
   $('#pXpTxt').textContent = `${li.into} / ${li.need} XP`;
   $('#pXpHint').textContent = `${li.need - li.into} XP to Level ${li.lvl + 1} — listen, like and save to earn it.`;
@@ -1363,10 +1647,10 @@ function applyTheme() {
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (prefs.theme === 'system') applyTheme(); }); } catch {}
 
 function paintMute() {
-  audio.muted = state.muted;
-  const b = $('#muteBtn');
-  b.innerHTML = icon(state.muted ? 'volumeX' : 'volume2');
-  b.setAttribute('aria-label', state.muted ? 'Unmute' : 'Mute');
+  audio.muted = !!prefs.muted;
+  const sw = $('#setMuted'); if (sw) sw.checked = !!prefs.muted;
+  const vol = $('#setVolume'); if (vol) vol.value = String(prefs.volume);
+  const auto = $('#setAuto'); if (auto) auto.checked = !!prefs.auto;
 }
 function toast(msg) {
   const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
@@ -1380,12 +1664,15 @@ function paintSettings() {
   $('#setHaptics').checked = !!prefs.haptics;
   $('#setSfx').checked = !!prefs.sfx;
   $('#setCelebrate').checked = !!prefs.celebrate;
+  $('#setMuted').checked = !!prefs.muted;
+  $('#setVolume').value = String(prefs.volume);
+  $('#setAuto').checked = !!prefs.auto;
   const li = levelInfo(stats.xp);
   $('#sLevel').textContent = li.lvl;
   $('#sHeard').textContent = fmt(stats.heard);
   $('#sStreak').textContent = stats.streak || 0;
   $('#sLikes').textContent = Object.keys(state.liked).length;
-  $('#sSaves').textContent = Object.keys(state.saved).length;
+  $('#sSaves').textContent = state.playlists.reduce((n, p) => n + p.items.length, 0);
   $('#sMins').textContent = fmt(Math.round(stats.seconds / 60));
 }
 /* =====================================================================
@@ -1394,7 +1681,17 @@ function paintSettings() {
 document.addEventListener('click', e => {
   const nav = e.target.closest('[data-nav]'); if (nav) return showView(nav.dataset.nav);
   const vibe = e.target.closest('[data-vibe]'); if (vibe) { searchInput.value = vibe.dataset.vibe; return doSearch(vibe.dataset.vibe); }
-  const tab = e.target.closest('[data-tab]'); if (tab) { state.tab = tab.dataset.tab; return renderSaved(); }
+  const tab = e.target.closest('[data-tab]'); if (tab) { state.tab = tab.dataset.tab; state.plView = null; return renderSaved(); }
+  const plt = e.target.closest('[data-pltoggle]'); if (plt) {
+    const plId = plt.dataset.pltoggle, id2 = state.addPl;
+    const pl = state.playlists.find(p => p.id === plId);
+    if (pl && id2) {
+      if (pl.items.some(it => it.id === id2)) removeClipFrom(id2, plId);
+      else { saveClipTo(id2, plId); buzz(12); blip('save'); gainXp(2); toast('Added to ' + pl.name + '.'); }
+      renderAddPlList();
+    }
+    return;
+  }
   const a = e.target.closest('[data-act]'); if (!a) return;
   const id = a.dataset.id;
   switch (a.dataset.act) {
@@ -1403,21 +1700,41 @@ document.addEventListener('click', e => {
       likeClip(id, { x: r.left + r.width / 2, y: r.top });
       break;
     }
-    case 'save': {
-      const r = a.getBoundingClientRect();
-      saveClip(id, { x: r.left + r.width / 2, y: r.top });
-      break;
-    }
+    case 'save': openAddPl(id); buzz(10); break;
     case 'share': {
-      const r = a.getBoundingClientRect();
       openShare(id);
       buzz(10); blip('tap');
-      gainXp(3, { pt: { x: r.left + r.width / 2, y: r.top } });
+      gainXp(3);
       break;
     }
     case 'tile': playTile(id); buzz(10); break;
-    case 'unsave': if (state.currentId === id) audio.pause(); toggleSave(id); renderSaved(); renderSearch(); renderProfile(); break;
+    case 'addpl': openAddPl(id); buzz(10); blip('tap'); break;
+    case 'mix': { const c = findClip(id); if (c) doSearch([c.title, c.artist].filter(Boolean).join(' ')); showView('search'); break; }
+    case 'plnew': openPlNew(null); break;
+    case 'plopen': state.plView = a.dataset.pl; renderSaved(); break;
+    case 'plback': state.plView = null; renderSaved(); break;
+    case 'plplay': playQueue(state.plView, false); break;
+    case 'plshuffle': playQueue(state.plView, true); break;
+    case 'plremove': removeClipFrom(id, state.plView); break;
+    case 'pltile': playTile(id); break;
     case 'unlike': if (state.currentId === id) audio.pause(); toggleLike(id, false); renderSaved(); renderSearch(); renderProfile(); break;
+    case 'plrename': {
+      const pl = state.playlists.find(p => p.id === state.plView);
+      if (pl) {
+        const name = prompt('Rename playlist', pl.name);
+        if (name != null) { pl.name = (name.trim() || pl.name).slice(0, 40); plSave(); renderSaved(); renderAddPlList(); toast('Renamed.'); }
+      }
+      break;
+    }
+    case 'pldelete': {
+      const pl = state.playlists.find(p => p.id === state.plView);
+      if (pl && confirm('Delete “' + pl.name + '"?')) {
+        if (state.queue && state.queue.id === pl.id) { state.queue = null; paintQueueBar(); audio.loop = true; }
+        state.playlists = state.playlists.filter(p => p.id !== pl.id); plSave();
+        state.plView = null; renderSaved(); updateCounts(); renderProfile(); toast('Playlist deleted.');
+      }
+      break;
+    }
     case 'retry': setStation(); break;
     case 'top': feed.scrollTo({ top: 0, behavior: 'smooth' }); break;
     case 'research': doSearch(state.searchTerm || searchInput.value); break;
@@ -1472,8 +1789,8 @@ addEventListener('keydown', e => {
     case 'arrowup': case 'k': e.preventDefault(); go(-1); break;
     case ' ': e.preventDefault(); togglePlay(); break;
     case 'l': if (c) likeClip(c.id, artPt()); break;
-    case 's': if (c) saveClip(c.id, artPt()); break;
-    case 'm': state.muted = !state.muted; store.set('snip:muted', state.muted); paintMute(); buzz(10); break;
+    case 's': if (c) openAddPl(c.id); break;
+    case 'm': prefs.muted = !prefs.muted; store.set('snip:prefs', prefs); paintMute(); buzz(10); break;
   }
 });
 
@@ -1531,11 +1848,39 @@ startBtn.addEventListener('click', () => {
 
 $('#prevBtn').addEventListener('click', () => go(-1));
 $('#nextBtn').addEventListener('click', () => go(1));
-$('#muteBtn').addEventListener('click', () => { state.muted = !state.muted; store.set('snip:muted', state.muted); paintMute(); buzz(10); });
 $('#settingsBtn').addEventListener('click', () => { paintSettings(); settingsDlg.showModal(); buzz(10); });
 $('#copyBtn').addEventListener('click', copyLink);
 
-[settingsDlg, shareDlg].forEach(d => d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) d.close(); }));
+[settingsDlg, shareDlg, addPlDlg, plNewDlg].forEach(d => d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) d.close(); }));
+
+/* Queue bar */
+document.addEventListener('click', e => {
+  const qb = e.target.closest('[data-queue-act]'); if (!qb) return;
+  if (qb.dataset.queueAct === 'stop') { stopQueue(); toast('Back to the feed.'); }
+  if (qb.dataset.queueAct === 'shuffle' && state.queue) playQueue(state.queue.id, true);
+});
+
+/* New-playlist dialog */
+$('#addPlNew').addEventListener('click', () => { addPlDlg.close(); openPlNew(state.addPl); });
+$('#plCreate').addEventListener('click', () => {
+  const first = state.plFirst; state.plFirst = null;
+  const pl = newPlaylist($('#plNewName').value, state.plEmoji || '🎵', first);
+  plNewDlg.close();
+  if (first && state.addPl === first) { renderAddPlList(); addPlDlg.showModal(); }
+  else { state.tab = 'saved'; state.plView = pl.id; showView('profile'); renderSaved(); }
+});
+$('#plNewName').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#plCreate').click(); } });
+plNewDlg.addEventListener('click', e => {
+  const eb = e.target.closest('[data-emoji]'); if (!eb) return;
+  state.plEmoji = eb.dataset.emoji;
+  $$('#plEmojiRow [data-emoji]').forEach(b => { b.style.borderColor = b === eb ? 'var(--accent)' : ''; b.style.color = b === eb ? 'var(--accent)' : ''; });
+});
+
+/* Settings: sound + auto-scroll */
+$('#setMuted').addEventListener('change', e => { prefs.muted = e.target.checked; store.set('snip:prefs', prefs); buzz(10); });
+$('#setVolume').addEventListener('input', e => { prefs.volume = +e.target.value; audio.volume = prefs.volume; store.set('snip:prefs', prefs); });
+$('#setVolume').addEventListener('change', () => blip('tap'));
+$('#setAuto').addEventListener('change', e => { prefs.auto = e.target.checked; store.set('snip:prefs', prefs); audio.loop = state.queue && state.queue.id ? false : !prefs.auto; buzz(10); if (prefs.auto) toast('Auto-scroll on — clips advance on their own.'); });
 shareDlg.addEventListener('click', e => {
   const t = e.target.closest('[data-share]'); if (!t) return;
   toast(`Shared to ${t.dataset.share} (demo).`); shareDlg.close();
@@ -1549,7 +1894,7 @@ $('#setHaptics').addEventListener('change', e => { prefs.haptics = e.target.chec
 $('#setSfx').addEventListener('change', e => { prefs.sfx = e.target.checked; savePrefs(); blip('tap'); });
 $('#setCelebrate').addEventListener('change', e => { prefs.celebrate = e.target.checked; savePrefs(); if (prefs.celebrate) confettiAt(innerWidth / 2, innerHeight / 3); });
 $('#resetBtn').addEventListener('click', () => {
-  if (!confirm('Reset likes, saves, stats and settings?')) return;
+  if (!confirm('Reset likes, playlists, stats and settings?')) return;
   try { Object.keys(localStorage).filter(k => k.startsWith('snip:')).forEach(k => localStorage.removeItem(k)); } catch {}
   location.reload();
 });
@@ -1561,11 +1906,29 @@ document.addEventListener('visibilitychange', () => {
 addEventListener('pagehide', saveStats);
 setInterval(saveStats, 10000);
 
+function openPlNew(firstClipId) {
+  state.plFirst = firstClipId || null;
+  state.plEmoji = null;
+  $('#plNewName').value = '';
+  $('#plEmojiRow').innerHTML = PL_EMOJIS.map(e => `<button class="rail-dot" data-emoji="${e}" aria-label="Pick ${e}">${e}</button>`).join('');
+  plNewDlg.showModal();
+  setTimeout(() => $('#plNewName').focus(), 60);
+}
+
 /* =====================================================================
    Boot
    ===================================================================== */
 async function init() {
   $$('[data-i]').forEach(el => { el.innerHTML = icon(el.dataset.i, { size: +el.dataset.s || 20 }); });
+  if (!Array.isArray(store.get('snip:playlists', null))) {
+    const old = store.get('snip:saved', {});
+    state.playlists = Object.keys(old).length
+      ? [{ id: 'faves', name: 'Faves', emoji: '❤️', at: Date.now(), items: Object.values(old).sort((a, b) => b.at - a.at).map(c => ({ ...pick(c) })) }]
+      : [];
+    plSave();
+  } else {
+    state.playlists = store.get('snip:playlists');
+  }
   applyTheme();
   paintMute(); renderStations(); renderVibes(); renderSearchEmpty(); paintNav(); renderProfile(); renderSaved(); updateCounts(); updateStart();
   state.pool = buildPool([...state.stations]);
