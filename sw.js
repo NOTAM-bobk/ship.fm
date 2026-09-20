@@ -1,6 +1,6 @@
 /* snip.fm service worker — offline shell + runtime caching.
    Bump CACHE when the shell changes so clients pick up the new build. */
-const CACHE = 'snipfm-v3';
+const CACHE = 'snipfm-v4';
 const SHELL = [
   './',
   './index.html',
@@ -10,7 +10,7 @@ const SHELL = [
   './icons/maskable-512.png',
   './icons/apple-touch-icon.png'
 ];
-const ART_CACHE = 'snipfm-art-v3';
+const ART_CACHE = 'snipfm-art-v4';
 const ART_MAX = 160;
 
 self.addEventListener('install', event => {

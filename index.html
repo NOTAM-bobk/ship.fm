@@ -146,7 +146,7 @@
   }
   .station-bar::after {
     content: ""; position: absolute; left: 0; right: 0; bottom: -20px; height: 20px; pointer-events: none;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 55%, transparent), transparent);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--feedglow, transparent) 26%, transparent), transparent);
   }
   .count-pill {
     display: inline-block; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 4px;
@@ -174,7 +174,7 @@
     content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 3px; border-radius: 999px; background: var(--accent);
   }
   .bnav {
-    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 2px; min-height: 56px; font-size: 12px; color: var(--muted); transition: color .12s, transform .12s var(--spring);
   }
   .bnav:active { transform: scale(.92); }
@@ -304,7 +304,6 @@
   }
   .rail-btn.on svg { fill: currentColor; }
   .rail-btn.bookmarked { background: var(--fg); color: var(--bg); }
-  .rail-lab { font-size: 11px; font-weight: 700; color: var(--muted); margin-top: -8px; }
   .rail-dot {
     display: grid; place-items: center; width: 46px; height: 46px; border-radius: 999px;
     border: 1.5px dashed var(--line); color: var(--muted); font-weight: 800;
@@ -670,6 +669,40 @@
   .rank-av img { width: 100%; height: 100%; object-fit: cover; }
   .ob-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--line); transition: background .25s, width .25s var(--spring); }
   .ob-dot.on { background: var(--accent); width: 18px; }
+
+  /* ---------- Sheets: pull-down grip ---------- */
+  .sheet-grip {
+    position: sticky; top: 0; z-index: 4;
+    display: flex; align-items: center; justify-content: center;
+    height: 26px; padding-top: 10px;
+    cursor: grab; touch-action: none; user-select: none;
+  }
+  .sheet-grip::before {
+    content: ""; width: 46px; height: 5px; border-radius: 999px;
+    background: color-mix(in srgb, var(--fg) 26%, transparent);
+    transition: background .16s, transform .16s var(--spring);
+  }
+  .sheet-grip:hover::before, .sheet-grip:active::before {
+    background: color-mix(in srgb, var(--fg) 55%, transparent); transform: scaleX(1.14);
+  }
+  .sheet-grip:active { cursor: grabbing; }
+  dialog { transition: transform .3s var(--spring), opacity .24s ease; }
+  dialog.dragging { transition: none; }
+  @media (min-width: 640px) { .sheet-grip { height: 30px; padding-top: 12px; } }
+
+  /* ---------- Feed colour bleeding into the bars ---------- */
+  .bar-glow {
+    position: absolute; inset: 0; pointer-events: none; opacity: 0;
+    transition: opacity .5s ease;
+  }
+  .bar-glow.on { opacity: 1; }
+  .station-bar .bar-glow {
+    background: linear-gradient(0deg, color-mix(in srgb, var(--feedglow, transparent) 36%, transparent) 0%, transparent 100%);
+  }
+  #bottomNav .bar-glow {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--feedglow, transparent) 40%, transparent) 0%, transparent 100%);
+  }
+  #stations { position: relative; z-index: 1; }
 </style>
 </head>
 <body class="bg-bg text-fg antialiased">
@@ -716,6 +749,7 @@
     <!-- Feed view -->
     <section id="viewFeed" class="absolute inset-0 flex flex-col" aria-label="Feed">
       <div id="stationBar" class="station-bar shrink-0">
+        <span class="bar-glow" aria-hidden="true"></span>
         <div id="stations" class="no-sb mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-2 sm:px-6" role="group" aria-label="Stations — tap to mix genres"></div>
       </div>
       <div class="relative min-h-0 flex-1">
@@ -754,6 +788,7 @@
           <input id="searchInput" type="search" placeholder="Songs, artists, moods…" autocomplete="off" enterkeyhint="search" aria-label="Search music">
           <button type="button" id="searchClear" class="icon-btn !h-9 !w-9" aria-label="Clear search" hidden data-i="x" data-s="16"></button>
         </form>
+        <div id="recentRow" class="mt-4" hidden></div>
         <div id="vibes" class="mt-4 flex flex-wrap gap-2" aria-label="Suggested vibes"></div>
         <div id="artistRow" class="mt-5" hidden></div>
         <div id="searchMeta" class="mt-5 text-sm text-muted" hidden></div>
@@ -872,7 +907,8 @@
   </main>
 
   <!-- Bottom nav (mobile) -->
-  <nav class="grid shrink-0 grid-cols-4 border-t border-line bg-bg" style="padding-bottom:env(safe-area-inset-bottom)" aria-label="Primary">
+  <nav id="bottomNav" class="relative grid shrink-0 grid-cols-4 border-t border-line bg-bg" style="padding-bottom:env(safe-area-inset-bottom)" aria-label="Primary">
+    <span class="bar-glow" aria-hidden="true"></span>
     <button class="bnav" data-nav="feed" aria-current="page"><span data-i="radio"></span><span>Feed</span></button>
     <button class="bnav" data-nav="search"><span data-i="search"></span><span>Search</span></button>
     <button class="bnav" data-nav="profile"><span data-i="user"></span><span>Profile</span></button>
@@ -1613,6 +1649,7 @@ const state = {
   artist: null, artistLoading: false, artistFrom: 'search',
   counted: new Set(), finished: new Set(), lastT: 0, playT: 0, playedId: null,
   glow: {}, lyrics: {}, lyricFetch: {}, searched: new Set(),
+  recent: store.get('snip:recent', []),
 };
 if (!state.stations.size) state.stations = new Set(['foryou']);
 
@@ -1781,6 +1818,8 @@ function paintGlow(id) {
   const col = state.glow[id];
   if (!col) return;
   $$(`.slide[data-id="${id}"], .tile[data-id="${id}"]`).forEach(el => el.style.setProperty('--glow', col));
+  const cur = state.clips[state.active];
+  if (cur && cur.id === id) paintFeedGlow(col);
 }
 
 /* ---- Live lyrics (Apple offers no lyric endpoint, so we use lyrics.ovh) ---- */
@@ -1858,8 +1897,7 @@ function slideHTML(c, i) {
         <div class="rail flex-none pb-1">
           <button class="rail-btn like ${liked ? 'on' : ''}" data-act="like" data-id="${c.id}" aria-pressed="${liked}" aria-label="${liked ? 'Unlike' : 'Like'}">${icon('heart')}</button>
           <p class="rail-count mono">${fmt(baseLikes(c.id) + (liked ? 1 : 0))}</p>
-          <button class="rail-btn ${saved ? 'on bookmarked' : ''}" data-act="addpl" data-id="${c.id}" aria-label="Add to playlist">${icon('bookmark', { fill: saved })}</button>
-          <p class="rail-lab">${saved ? 'In playlists' : 'Add'}</p>
+          <button class="rail-btn ${saved ? 'on bookmarked' : ''}" data-act="addpl" data-id="${c.id}" aria-label="${saved ? 'In playlists — manage' : 'Add to playlist'}">${icon('bookmark', { fill: saved })}</button>
           <button class="rail-btn" data-act="share" data-id="${c.id}" aria-label="Share">${icon('share')}</button>
           <button class="rail-pl" data-act="mix" data-id="${c.id}" aria-label="Play songs like this">${icon('sparkles', { size: 18 })}</button>
         </div>
@@ -2023,6 +2061,7 @@ function activate(i) {
   if (state.started && state.view === 'feed' && (state.currentId !== c.id || !state.userPaused)) playClip(c);
   paintPlaying();
   sampleGlow(c);
+  paintFeedGlow(glowColor(c.id));
   loadLyrics(c);
   if (i >= state.clips.length - 3) loadMore();
   const nx = state.clips[i + 1];
@@ -2126,7 +2165,6 @@ function syncClip(id) {
     const inPl = playlistOf(id).length;
     b.classList.toggle('on', inPl); b.classList.toggle('bookmarked', inPl);
     b.setAttribute('aria-label', inPl ? 'In playlists — manage' : 'Add to playlist');
-    const lab = b.nextElementSibling; if (lab && lab.classList.contains('rail-lab')) lab.textContent = inPl ? 'In playlists' : 'Add';
   });
 }
 function updateCounts() {
@@ -2183,6 +2221,27 @@ function renderSearchEmpty() {
       <h2 class="round mt-4 text-base font-bold tracking-tight">Search the whole catalog</h2>
       <p class="mt-1 max-w-[34ch] text-sm leading-relaxed text-muted">Find any song or artist instantly — or tap a vibe above to wander. Each search earns a little XP.</p>
     </div>`;
+  renderRecents();
+}
+function saveRecent(term) {
+  const t = String(term || '').trim();
+  if (!t) return;
+  state.recent = [t, ...state.recent.filter(x => x.toLowerCase() !== t.toLowerCase())].slice(0, 8);
+  store.set('snip:recent', state.recent);
+}
+function renderRecents() {
+  const row = $('#recentRow'); if (!row) return;
+  const show = state.recent.length > 0 && !state.searchResults.length && state.view === 'search';
+  row.hidden = !show;
+  if (!show) { row.innerHTML = ''; return; }
+  row.innerHTML = `
+    <div class="flex items-baseline justify-between gap-3">
+      <h2 class="round text-sm font-bold tracking-tight">Recent searches</h2>
+      <button id="recentClear" class="text-xs font-semibold text-muted">Clear all</button>
+    </div>
+    <div class="mt-3 flex flex-wrap gap-2">
+      ${state.recent.map(t => `<button class="chip vibe round" data-recent="${esc(t)}"><span aria-hidden="true">🕘</span>${esc(t)}</button>`).join('')}
+    </div>`;
 }
 function initials(name) {
   const parts = String(name || '?').trim().split(/\s+/).filter(Boolean);
@@ -2211,6 +2270,7 @@ function renderArtistRow() {
 }
 function renderSearch() {
   if (state.view !== 'search') return;
+  renderRecents();
   renderArtistRow();
   if (!state.searchResults.length) {
     searchGrid.innerHTML = (state.searchArtists || []).length
@@ -2232,6 +2292,7 @@ async function doSearch(term) {
   state.searchTerm = term;
   searchInput.value = term; searchClear.hidden = false;
   vibesEl.hidden = true; searchMeta.hidden = false;
+  const recentRow = $('#recentRow'); if (recentRow) { recentRow.hidden = true; recentRow.innerHTML = ''; }
   searchMeta.textContent = `Searching “${term}”…`;
   searchGrid.innerHTML = `<div class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3">${Array(6).fill(searchSk()).join('')}</div>`;
   buzz(8);
@@ -2246,6 +2307,7 @@ async function doSearch(term) {
     res.forEach(c => { state.searchMap[c.id] = c; });
     searchMeta.textContent = res.length ? `${res.length} results for “${term}”` : `No results for “${term}” — try another spelling.`;
     if (res.length || art.length) {
+      saveRecent(term);
       renderSearch(); blip('search');
       if (!state.searched.has(term.toLowerCase())) { state.searched.add(term.toLowerCase()); gainXp(1); }
     }
@@ -2513,6 +2575,7 @@ function showView(v) {
     if (v === 'search') { if (!state.searchTerm && !state.searchResults.length) renderSearchEmpty(); setTimeout(() => searchInput.focus(), 60); }
     if (v === 'profile') { renderProfile(); renderSaved(); viewProfile.scrollTop = 0; }
     if (v === 'artist') viewArtist.scrollTop = 0;
+    paintFeedGlow(null);
   }
 }
 
@@ -2558,11 +2621,73 @@ function paintSettings() {
   $('#sXp').textContent = fmt(stats.xp || 0);
 }
 /* =====================================================================
+   Feed colour bleeding into the station bar + bottom nav
+   ===================================================================== */
+function paintFeedGlow(color) {
+  if (color) document.documentElement.style.setProperty('--feedglow', color);
+  const show = !!(color && state.view === 'feed' && state.started);
+  $$('.bar-glow').forEach(el => {
+    if (!show) { el.classList.remove('on'); return; }
+    /* Restart the fade so every clip blooms its own colour in. */
+    el.classList.remove('on');
+    void el.offsetWidth;
+    el.classList.add('on');
+  });
+}
+
+/* =====================================================================
+   Sheets: a grip you can pull down to dismiss
+   ===================================================================== */
+function initSheets() {
+  $$('dialog').forEach(dlg => {
+    if (dlg.dataset.grip) return;
+    dlg.dataset.grip = '1';
+    const grip = document.createElement('div');
+    grip.className = 'sheet-grip';
+    grip.setAttribute('aria-hidden', 'true');
+    dlg.insertBefore(grip, dlg.firstChild);
+    let startY = 0, dy = 0, dragging = false;
+    const drop = () => {
+      if (!dragging) return;
+      dragging = false;
+      dlg.classList.remove('dragging');
+      if (dy > 88) {
+        dlg.style.transform = 'translateY(120vh)';
+        dlg.style.opacity = '0';
+        setTimeout(() => {
+          dlg.style.transform = ''; dlg.style.opacity = '';
+          if (dlg.open) dlg.close();
+        }, 240);
+      } else {
+        dlg.style.transform = ''; dlg.style.opacity = '';
+      }
+      dy = 0;
+    };
+    grip.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      dragging = true; startY = e.clientY; dy = 0;
+      dlg.classList.add('dragging');
+      try { grip.setPointerCapture(e.pointerId); } catch {}
+    });
+    grip.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      dy = Math.max(0, e.clientY - startY);
+      dlg.style.transform = 'translateY(' + dy + 'px)';
+      dlg.style.opacity = String(Math.max(0.4, 1 - dy / 420));
+    });
+    grip.addEventListener('pointerup', drop);
+    grip.addEventListener('pointercancel', drop);
+  });
+}
+
+/* =====================================================================
    Events
    ===================================================================== */
 document.addEventListener('click', e => {
   const nav = e.target.closest('[data-nav]'); if (nav) return showView(nav.dataset.nav);
-  const vibe = e.target.closest('[data-vibe]'); if (vibe) { searchInput.value = vibe.dataset.vibe; return doSearch(vibe.dataset.vibe); }
+  const vibe = e.target.closest('[data-vibe]'); if (vibe) { searchInput.value = vibe.dataset.vibe; searchClear.hidden = false; return doSearch(vibe.dataset.vibe); }
+  const recent = e.target.closest('[data-recent]'); if (recent) { searchInput.value = recent.dataset.recent; searchClear.hidden = false; return doSearch(recent.dataset.recent); }
+  if (e.target.closest('#recentClear')) { state.recent = []; store.set('snip:recent', []); renderRecents(); return; }
   const tab = e.target.closest('[data-tab]'); if (tab) { state.tab = tab.dataset.tab; state.plView = null; return renderSaved(); }
   const plt = e.target.closest('[data-pltoggle]'); if (plt) {
     const plId = plt.dataset.pltoggle, id2 = state.addPl;
@@ -2737,6 +2862,7 @@ searchClear.addEventListener('click', () => {
   state.searchTerm = ''; state.searchResults = []; state.searchArtists = [];
   searchMeta.hidden = true; vibesEl.hidden = false;
   renderSearchEmpty();
+  renderRecents();
   searchInput.focus();
 });
 
@@ -3489,6 +3615,7 @@ async function init() {
   saveStats();
   paintGoal();
   initPwa();
+  initSheets();
   if (location.hash === '#search') showView('search');
   else if (location.hash === '#profile') showView('profile');
   /* First visit of a new week: the recap is the reason to come back. */
