@@ -552,6 +552,8 @@
   .gbar-track { height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
   .gbar-fill { height: 100%; border-radius: 999px; transition: width .5s var(--spring); }
   #profBio { resize: vertical; min-height: 84px; }
+  .ob-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--line); transition: background .25s, width .25s var(--spring); }
+  .ob-dot.on { background: var(--accent); width: 18px; }
 </style>
 </head>
 <body class="bg-bg text-fg antialiased">
@@ -2373,6 +2375,7 @@ feed.addEventListener('keydown', e => {
 /* Keyboard shortcuts */
 addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey || $('dialog[open]')) return;
+  if (!onboardEl().classList.contains('hidden')) return;
   const tag = e.target.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA') return;
   const k = e.key.toLowerCase();
@@ -2754,6 +2757,7 @@ const OB_TASTES = [
 ];
 const ob = { step: 0, name: '', pass: '', pass2: '', avatar: null, tastes: new Set(), error: '', edit: false, lock: false };
 const onboardEl = () => $('#onboard');
+const obDots = step => `<div class="mt-4 flex items-center justify-center gap-1.5" aria-hidden="true">${[1, 2, 3, 4].map(i => `<span class="ob-dot${i <= step ? ' on' : ''}"></span>`).join('')}</div><p class="mt-2 text-center text-xs text-muted">Step ${step} of 4</p>`;
 
 function startOnboarding(edit) {
   const p = store.get('snip:profile', null);
@@ -2781,17 +2785,21 @@ function obFeatures() {
     ['mic', 'Live lyrics', 'Words scroll along with the clip. Turn them off in settings.']
   ];
   return `
-    <div class="flex flex-1 flex-col justify-center py-6">
+    <div class="flex flex-1 flex-col py-6">
       <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-accent text-3xl">🎧</div>
       <h1 class="round mt-5 text-3xl font-bold tracking-tight">Welcome to snip.fm</h1>
       <p class="mt-2 text-sm leading-relaxed text-muted">Thirty seconds. One song. Next. Here is everything you can do.</p>
-      <ul class="mt-6 flex flex-col gap-3">
+      <ul class="mt-5 flex flex-col gap-3">
         ${rows.map(([ic, t, s]) => `
           <li class="flex items-start gap-3">
             <span class="ring" style="width:38px;height:38px">${icon(ic, { size: 18 })}</span>
             <span class="min-w-0"><span class="block text-sm font-semibold">${t}</span><span class="block text-xs leading-relaxed text-muted">${s}</span></span>
           </li>`).join('')}
       </ul>
+      <div class="mt-auto pt-6">
+        <button id="obPrimary" class="btn-primary round w-full">Continue</button>
+        ${obDots(1)}
+      </div>
     </div>`;
 }
 function obWelcomeBack() {
@@ -2830,9 +2838,12 @@ function obNameStep() {
       <div class="mt-4 flex flex-wrap gap-2">
         ${OB_EMOJI.map(e => `<button class="chip round" data-obemoji="${e}" aria-pressed="${av && av.type !== 'img' && av.value === e}">${e}</button>`).join('')}
       </div>
-      <div class="mt-auto flex gap-2 pt-6">
-        <button id="obBack" class="btn flex-1">Back</button>
-        <button id="obPrimary" class="btn-primary round flex-1">Continue</button>
+      <div class="mt-auto pt-6">
+        <div class="flex gap-2">
+          <button id="obBack" class="btn flex-1">Back</button>
+          <button id="obPrimary" class="btn-primary round flex-1">Continue</button>
+        </div>
+        ${obDots(2)}
       </div>
     </div>`;
 }
@@ -2846,9 +2857,12 @@ function obPassStep() {
       <label class="mt-4 block text-sm font-semibold" for="obPass2">Confirm password</label>
       <input id="obPass2" type="password" class="mt-2 w-full rounded-2xl border border-line bg-surface px-4 text-base" style="min-height:48px" autocomplete="new-password">
       ${ob.error ? `<p class="mt-3 text-xs" style="color:var(--accent)">${esc(ob.error)}</p>` : ''}
-      <div class="mt-auto flex gap-2 pt-6">
-        <button id="obBack" class="btn flex-1">Back</button>
-        <button id="obPrimary" class="btn-primary round flex-1">Continue</button>
+      <div class="mt-auto pt-6">
+        <div class="flex gap-2">
+          <button id="obBack" class="btn flex-1">Back</button>
+          <button id="obPrimary" class="btn-primary round flex-1">Continue</button>
+        </div>
+        ${obDots(3)}
       </div>
     </div>`;
 }
@@ -2861,9 +2875,12 @@ function obTasteStep() {
         ${OB_TASTES.map(t => `<button class="chip round" data-obtaste="${t.id}" aria-pressed="${ob.tastes.has(t.id)}">${t.emoji} ${t.label}</button>`).join('')}
       </div>
       ${ob.error ? `<p class="mt-3 text-xs" style="color:var(--accent)">${esc(ob.error)}</p>` : ''}
-      <div class="mt-auto flex gap-2 pt-6">
-        <button id="obBack" class="btn flex-1">Back</button>
-        <button id="obPrimary" class="btn-primary round flex-1">Create my feed</button>
+      <div class="mt-auto pt-6">
+        <div class="flex gap-2">
+          <button id="obBack" class="btn flex-1">Back</button>
+          <button id="obPrimary" class="btn-primary round flex-1">Create my feed</button>
+        </div>
+        ${obDots(4)}
       </div>
     </div>`;
 }
@@ -2874,6 +2891,8 @@ function obDoneStep() {
       <h1 class="round mt-5 text-2xl font-bold tracking-tight">You are all set, ${esc(ob.name || 'friend')}</h1>
       <p class="mt-2 max-w-[34ch] text-sm leading-relaxed text-muted">Your feed is tuned to ${[...ob.tastes].map(id => stationLabel(id)).join(' · ') || 'For You'}. Scroll, listen, and finish clips for the big XP.</p>
       <button id="obStart" class="btn-primary round mt-7 w-full">Start listening</button>
+      <button id="obBackTastes" class="btn mt-2 w-full text-sm">← Change my tastes</button>
+      <p class="mt-3 text-xs text-muted">Everything here can be changed later in settings.</p>
     </div>`;
 }
 function renderOnboard() {
@@ -2932,6 +2951,7 @@ onboardEl().addEventListener('click', async e => {
   const prim = e.target.closest('#obPrimary, #obStart');
   if (prim) return obAdvance();
   if (e.target.closest('#obBack')) return obBack();
+  if (e.target.closest('#obBackTastes')) { ob.step = 3; ob.error = ''; return renderOnboard(); }
   if (e.target.closest('#obReset')) { ob.lock = false; ob.step = 0; ob.name = ''; ob.avatar = null; ob.tastes = new Set(); renderOnboard(); return; }
   const em = e.target.closest('[data-obemoji]');
   if (em) {
@@ -2945,6 +2965,15 @@ onboardEl().addEventListener('click', async e => {
     ob.error = '';
     return renderOnboard();
   }
+});
+onboardEl().addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const t = e.target;
+  if (t && t.tagName === 'TEXTAREA') return;
+  if (t && t.closest && t.closest('[data-obemoji], [data-obtaste]')) return;
+  e.preventDefault();
+  const prim = $('#obPrimary') || $('#obStart');
+  if (prim) prim.click(); else obAdvance();
 });
 onboardEl().addEventListener('change', e => {
   if (e.target.id !== 'obPhoto') return;
