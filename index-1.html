@@ -171,7 +171,7 @@
     scroll-snap-type: y mandatory; scrollbar-width: none;
   }
   #feed::-webkit-scrollbar { display: none; }
-  .slide { height: 100%; display: flex; justify-content: center; scroll-snap-align: start; scroll-snap-stop: always; }
+  .slide { position: relative; height: 100%; display: flex; justify-content: center; scroll-snap-align: start; scroll-snap-stop: always; }
   .slide-in {
     position: relative; display: flex; flex-direction: column; gap: 16px;
     width: 100%; max-width: 440px; height: 100%; padding: 16px 16px 20px;
@@ -319,6 +319,55 @@
   .pl-row + .pl-row { border-top: 1px solid var(--line); }
   .pl-row-art { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); overflow: hidden; }
   .pl-row-art img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* Artist chips + hero (search → artist screen) */
+  .artist-chip { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 88px; flex: none; }
+  .artist-av {
+    display: grid; place-items: center; width: 72px; height: 72px; border-radius: 999px; padding: 3px;
+    background: conic-gradient(from 200deg, var(--ac, var(--accent)), #FBBC04, #34A853, #4285F4, var(--ac, var(--accent)));
+    transition: transform .15s var(--spring);
+  }
+  .artist-av > span {
+    display: grid; place-items: center; width: 100%; height: 100%; border-radius: 999px;
+    background: var(--surface-2); border: 2px solid var(--bg); font-size: 22px; font-weight: 800; letter-spacing: -.02em;
+  }
+  .artist-chip:hover .artist-av { transform: scale(1.06); }
+  .artist-chip:active .artist-av { transform: scale(.94); }
+  .artist-hero-av { width: 104px; height: 104px; padding: 4px; }
+  .artist-hero-av > span { font-size: 34px; }
+
+  /* ---------- Album glow: the artwork's colors bleed onto the screen ---------- */
+  .slide-glow { position: absolute; inset: -12%; z-index: 0; overflow: hidden; opacity: 0; transition: opacity .55s ease; }
+  .slide.on-stage .slide-glow { opacity: 1; }
+  .slide-glow-art { width: 100%; height: 100%; object-fit: cover; filter: blur(70px) saturate(2.1) brightness(1.06); transform: scale(1.22); }
+  .dark .slide-glow-art { filter: blur(70px) saturate(1.9) brightness(.72); }
+  .slide-glow-tint {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(118% 74% at 50% 24%, color-mix(in srgb, var(--glow, var(--accent)) 55%, transparent), transparent 72%),
+      linear-gradient(180deg, color-mix(in srgb, var(--bg) 40%, transparent) 0%, color-mix(in srgb, var(--bg) 72%, transparent) 56%, var(--bg) 96%);
+  }
+  .ticks i.cur { background: var(--glow, var(--accent)); }
+  .rail-btn.on { color: var(--glow, var(--accent)); }
+  .rail-pl { background: var(--glow, var(--accent)); }
+  .station-tag { border-color: color-mix(in srgb, var(--glow, var(--accent)) 45%, transparent); }
+
+  /* ---------- Live lyrics ---------- */
+  .lyrics {
+    position: absolute; left: 20px; right: 20px; bottom: 118px; z-index: 4; height: 104px; overflow: hidden;
+    pointer-events: none; text-align: center;
+    mask-image: linear-gradient(180deg, transparent, #000 24%, #000 76%, transparent);
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 24%, #000 76%, transparent);
+  }
+  .lyrics-lines { transition: transform .5s cubic-bezier(.25,.9,.3,1); }
+  .lyr {
+    display: block; padding: 3px 0; font-size: 15px; font-weight: 700; line-height: 1.35;
+    color: color-mix(in srgb, var(--fg) 45%, transparent); opacity: .8;
+    transition: color .3s, transform .3s, opacity .3s;
+  }
+  .lyr.on { color: var(--fg); opacity: 1; }
+  .lyr.sk { height: 12px; width: 66%; margin: 9px auto; border-radius: 999px; background: var(--surface-2); animation: pulse 1.4s ease-in-out infinite; }
+  .slide.no-lyrics .lyrics { display: none; }
 
   /* ---------- Tiles (search + library grids) ---------- */
   .tile-art {
@@ -475,7 +524,15 @@
 <body class="bg-bg text-fg antialiased">
 <noscript><p style="padding:24px">snip.fm needs JavaScript to play clips.</p></noscript>
 
-<div id="app" class="flex h-[100dvh] flex-col overflow-hidden">
+<div id="app" class="relative flex h-[100dvh] flex-col overflow-hidden">
+
+  <!-- Onboarding (first run) -->
+  <section id="onboard" class="absolute inset-0 z-50 hidden overflow-y-auto bg-bg" aria-label="Welcome to snip.fm">
+    <div class="mx-auto flex min-h-full w-full max-w-md flex-col px-6 py-8">
+      <div class="floaties" aria-hidden="true"><span>🎵</span><span>🎶</span><span>✨</span><span>🎧</span></div>
+      <div id="obBody" class="relative z-10 flex flex-1 flex-col"></div>
+    </div>
+  </section>
 
   <!-- Header -->
   <header class="shrink-0 border-b border-line bg-bg" style="padding-top:env(safe-area-inset-top)">
@@ -547,6 +604,7 @@
           <button type="button" id="searchClear" class="icon-btn !h-9 !w-9" aria-label="Clear search" hidden data-i="x" data-s="16"></button>
         </form>
         <div id="vibes" class="mt-4 flex flex-wrap gap-2" aria-label="Suggested vibes"></div>
+        <div id="artistRow" class="mt-5" hidden></div>
         <div id="searchMeta" class="mt-5 text-sm text-muted" hidden></div>
         <div id="searchGrid" class="mt-4"></div>
       </div>
@@ -564,7 +622,7 @@
           </div>
         </div>
         <div class="mt-4">
-          <p class="round text-lg font-bold tracking-tight">you <span class="badge" id="pLevelBadge">Lvl 1</span></p>
+          <p class="round text-lg font-bold tracking-tight"><span id="pName">you</span> <span class="badge" id="pLevelBadge">Lvl 1</span></p>
           <p class="text-sm text-muted">30 seconds at a time 🎧</p>
         </div>
 
@@ -586,7 +644,10 @@
         </div>
 
         <div class="mt-6">
-          <h2 class="round text-sm font-bold tracking-tight">Your vibe mix</h2>
+          <div class="flex items-baseline justify-between gap-3">
+            <h2 class="round text-sm font-bold tracking-tight">Your vibe mix</h2>
+            <span class="text-xs text-muted">🎧 <span id="pFinished" class="mono">0</span> finished</span>
+          </div>
           <div id="genreDots" class="no-sb mt-3 flex gap-5 overflow-x-auto pb-1"></div>
         </div>
 
@@ -598,13 +659,22 @@
         <div id="savedGrid" class="mt-6"></div>
       </div>
     </section>
+
+    <!-- Artist view -->
+    <section id="viewArtist" class="absolute inset-0 overflow-y-auto" aria-label="Artist" hidden>
+      <div class="mx-auto w-full max-w-3xl px-4 py-4 sm:px-6 sm:py-6">
+        <button id="artistBack" class="btn !min-h-10 mb-4 text-sm">← Back to search</button>
+        <div id="artistHero"></div>
+        <div id="artistSongs" class="mt-6"></div>
+      </div>
+    </section>
   </main>
 
   <!-- Bottom nav (mobile) -->
   <nav class="grid shrink-0 grid-cols-3 border-t border-line bg-bg md:hidden" style="padding-bottom:env(safe-area-inset-bottom)" aria-label="Primary">
     <button class="bnav" data-nav="feed" aria-current="page"><span data-i="radio"></span><span>Feed</span></button>
     <button class="bnav" data-nav="search"><span data-i="search"></span><span>Search</span></button>
-    <button class="bnav" data-nav="profile"><span data-i="user"></span><span>Profile<span class="count-pill mono" data-saved-count></span></span></button>
+    <button class="bnav" data-nav="profile"><span data-i="user"></span><span>Profile</span></button>
   </nav>
 </div>
 
@@ -681,6 +751,24 @@
       <input type="checkbox" id="setCelebrate" class="sw">
     </label>
 
+    <p class="set-h">Lyrics</p>
+    <label class="row" for="setLyrics">
+      <span><span class="row-t">Live lyrics</span><span class="row-s">Words on the feed, timed to the clip</span></span>
+      <input type="checkbox" id="setLyrics" class="sw">
+    </label>
+
+    <p class="set-h">Your profile</p>
+    <div class="row" style="cursor:default">
+      <span class="flex items-center gap-3">
+        <span class="avatar-ring" style="padding:3px"><span class="avatar" id="setAvatar" style="width:46px;height:46px;font-size:20px">🎧</span></span>
+        <span><span class="row-t" id="setName">you</span><span class="row-s" id="setTastes">No tastes picked yet</span></span>
+      </span>
+      <span class="flex items-center gap-1">
+        <button id="editProfile" class="icon-btn" aria-label="Edit profile" data-i="pencil" data-s="18"></button>
+        <button id="signOutBtn" class="icon-btn !text-accent" aria-label="Sign out" data-i="x" data-s="18"></button>
+      </span>
+    </div>
+
     <p class="set-h">Your stats</p>
     <div class="stat-grid">
       <div class="stat-card"><p class="stat-num" id="sLevel">1</p><p class="stat-lab">Level</p></div>
@@ -689,6 +777,8 @@
       <div class="stat-card"><p class="stat-num" id="sLikes">0</p><p class="stat-lab">Likes</p></div>
       <div class="stat-card"><p class="stat-num" id="sSaves">0</p><p class="stat-lab">In playlists</p></div>
       <div class="stat-card"><p class="stat-num" id="sMins">0</p><p class="stat-lab">Minutes</p></div>
+      <div class="stat-card"><p class="stat-num" id="sFinished">0</p><p class="stat-lab">Finished</p></div>
+      <div class="stat-card"><p class="stat-num" id="sXp">0</p><p class="stat-lab">Total XP</p></div>
     </div>
 
     <p class="set-h">Data</p>
@@ -767,10 +857,36 @@ const store = {
 /* =====================================================================
    Prefs, stats, gamification
    ===================================================================== */
-const prefs = Object.assign({ theme: 'system', haptics: true, sfx: true, celebrate: true, muted: false, volume: 0.85, auto: false }, store.get('snip:prefs', {}));
+const prefs = Object.assign({ theme: 'system', haptics: true, sfx: true, celebrate: true, muted: false, volume: 0.85, auto: false, lyrics: true }, store.get('snip:prefs', {}));
 const savePrefs = () => store.set('snip:prefs', prefs);
-const stats = Object.assign({ xp: 0, heard: 0, seconds: 0, genres: {}, streak: 0, best: 0, lastDay: null }, store.get('snip:stats', {}));
+const stats = Object.assign({ xp: 0, heard: 0, finished: 0, seconds: 0, genres: {}, streak: 0, best: 0, lastDay: null }, store.get('snip:stats', {}));
 const saveStats = () => store.set('snip:stats', stats);
+
+/* XP can only be earned once per clip per action — no like/unlike farming */
+const awarded = store.get('snip:awarded', {});
+function awardOnce(kind, key) {
+  const k = kind + ':' + key;
+  if (awarded[k]) return false;
+  awarded[k] = 1;
+  const keys = Object.keys(awarded);
+  if (keys.length > 4000) delete awarded[keys[0]];
+  store.set('snip:awarded', awarded);
+  return true;
+}
+const profile = store.get('snip:profile', null);
+const saveProfile = () => store.set('snip:profile', profile);
+function hashPass(str) {
+  try {
+    if (crypto && crypto.subtle && crypto.subtle.digest) {
+      const buf = new TextEncoder().encode('snipfm:' + str);
+      return crypto.subtle.digest('SHA-256', buf).then(d =>
+        Array.from(new Uint8Array(d)).map(b => b.toString(16).padStart(2, '0')).join(''));
+    }
+  } catch {}
+  let h = 5381;
+  for (const ch of String(str)) h = (Math.imul(h, 33) ^ ch.charCodeAt(0)) >>> 0;
+  return Promise.resolve('w' + h.toString(16));
+}
 
 const levelInfo = xp => {
   let lvl = 1, need = 100, acc = 0;
@@ -852,6 +968,27 @@ function touchStreak() {
   stats.lastDay = today; saveStats();
   if (stats.streak > 1) toast(`🔥 ${stats.streak}-day streak! Keep it alive.`);
 }
+/* Hearing a full 30-second clip is the big XP moment */
+const artPoint = () => {
+  const el = activeSlide() && activeSlide().querySelector('.art');
+  const r = el && el.getBoundingClientRect();
+  return r ? { x: r.left + r.width / 2, y: r.top + 40 } : null;
+};
+function finishSong(id, dur) {
+  if (!id || !state.currentClip || state.finished.has(id)) return;
+  /* Ignore seek-to-the-end: require having actually heard most of the clip */
+  const need = Math.min(18, (dur || 30) * 0.6);
+  if ((state.playedId !== id ? 0 : state.playT) < need) return;
+  state.finished.add(id);
+  stats.finished = (stats.finished || 0) + 1;
+  saveStats();
+  gainXp(10, { pt: artPoint() });
+  if (state.view === 'profile') renderProfile();
+  if (!state.finishToasted) {
+    state.finishToasted = true;
+    toast('🎧 You finished the whole clip — +10 XP.');
+  }
+}
 
 /* Lucide-style icons */
 const I = {
@@ -881,6 +1018,7 @@ const I = {
   listMusic: '<path d="M21 15V6"/><path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/><path d="M12 12H3"/><path d="M16 6H3"/><path d="M12 18H3"/>',
   pencil: '<path d="M21.17 6.83a2.85 2.85 0 0 0-4-4L3 17v4h4Z"/>',
   trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  mic: '<path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="18" y2="22"/>',
   shuffle: '<path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/>',
   sparkles: '<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>'
 };
@@ -932,6 +1070,22 @@ const PROVIDERS = {
       const data = await getJSON(`https://itunes.apple.com/lookup?id=${encodeURIComponent(id)}`);
       const r = (data.results || [])[0];
       return r && r.previewUrl ? normalizeItunes(r) : null;
+    },
+    async artists(term, { limit = 8 } = {}) {
+      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&entity=musicArtist&country=US&limit=${limit}`;
+      const data = await getJSON(url);
+      return (data.results || []).filter(r => r.artistId).map(r => ({
+        id: String(r.artistId), name: r.artistName, genre: r.primaryGenreName || 'Music'
+      }));
+    },
+    async artistSongs(artistId, { limit = 25 } = {}) {
+      const data = await getJSON(`https://itunes.apple.com/lookup?id=${encodeURIComponent(artistId)}&entity=song&country=US&limit=${limit}`);
+      const rows = data.results || [];
+      const meta = rows.find(r => r.wrapperType === 'artist') || {};
+      return {
+        info: { id: String(artistId), name: meta.artistName || '', genre: meta.primaryGenreName || 'Music' },
+        songs: rows.filter(r => r.previewUrl && r.trackId).map(normalizeItunes)
+      };
     }
   }
 };
@@ -981,8 +1135,10 @@ const state = {
   queue: null,
   plView: null,
   addPl: null,
-  searchTerm: '', searchResults: [], searchMap: {}, searching: false,
-  counted: new Set(), lastT: 0
+  searchTerm: '', searchResults: [], searchArtists: [], searchMap: {}, searching: false,
+  artist: null, artistLoading: false, artistFrom: 'search',
+  counted: new Set(), finished: new Set(), lastT: 0, playT: 0, playedId: null,
+  glow: {}, lyrics: {}, lyricFetch: {}, searched: new Set(),
 };
 if (!state.stations.size) state.stations = new Set(['foryou']);
 
@@ -999,7 +1155,7 @@ const stationsEl = $('#stations'), toasts = $('#toasts');
 const shareDlg = $('#shareDlg'), settingsDlg = $('#settingsDlg');
 const addPlDlg = $('#addPlDlg'), plNewDlg = $('#plNewDlg');
 const searchInput = $('#searchInput'), searchClear = $('#searchClear'), searchMeta = $('#searchMeta');
-const searchGrid = $('#searchGrid'), vibesEl = $('#vibes');
+const searchGrid = $('#searchGrid'), vibesEl = $('#vibes'), viewArtist = $('#viewArtist');
 const coarse = matchMedia('(pointer: coarse)').matches;
 const START_COPY = 'Scroll through short clips, heart the ones you love, and save them for later.';
 
@@ -1029,6 +1185,7 @@ function seekBy(d) { const dur = audio.duration && isFinite(audio.duration) ? au
 
 ['play', 'pause', 'ended', 'emptied'].forEach(ev => audio.addEventListener(ev, paintPlaying));
 audio.addEventListener('ended', () => {
+  finishSong(state.currentId, audio.duration);
   if (state.queue && state.queue.id) { nextInQueue(1); return; }
   if (prefs.auto && state.started && state.view === 'feed' && !state.userPaused) {
     const next = $(`.slide[data-index="${state.active + 1}"]`, feed);
@@ -1071,10 +1228,15 @@ function onTime() {
     $('.ticks', slide).setAttribute('aria-valuenow', String(Math.round(t)));
   }
   $$(`.tile[data-id="${id}"]`).forEach(el => el.style.setProperty('--pct', (frac * 100) + '%'));
+  if (prefs.lyrics) paintLyricsProgress(id, frac);
 
   /* Gamification: count the listen + accrue listening time */
   const dt = t - state.lastT;
   if (dt > 0 && dt < 2) stats.seconds += dt;
+  if (state.playedId !== id) { state.playedId = id; state.playT = 0; }
+  if (dt > 0 && dt < 2) state.playT += dt;
+  /* Loop wrap happens after a near-end sample → also counts as finished */
+  if (t < state.lastT - 1 && state.lastT >= dur - 1.2) finishSong(id, dur);
   state.lastT = t;
   if (state.currentClip && t > 4 && !state.counted.has(id)) {
     state.counted.add(id);
@@ -1084,6 +1246,8 @@ function onTime() {
     gainXp(2);
     touchStreak();
   }
+  /* Played all the way to the end → bonus XP (needs real listening time) */
+  if (dur - t <= 0.6) finishSong(id, dur);
 }
 function paintPlaying() {
   const playing = !audio.paused && !!state.currentId;
@@ -1098,11 +1262,96 @@ function paintPlaying() {
    Rendering: feed
    ===================================================================== */
 
+/* Deterministic fallback color for a clip (used until artwork is sampled) */
+const FALLBACK_GLOW = id => PALETTE[String(id).split('').reduce((h, ch) => (h + ch.charCodeAt(0)) % PALETTE.length, 0)];
+const glowColor = id => (state.glow[id] || FALLBACK_GLOW(id));
+/* Sample the album art for its dominant saturated color; falls back to hash color */
+function sampleGlow(c) {
+  if (state.glow[c.id] || !c.art) return;
+  if (state.glow['skip:' + c.id]) return;
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    try {
+      const s = 24, cv = document.createElement('canvas');
+      cv.width = s; cv.height = s;
+      const ctx = cv.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, s, s);
+      const d = ctx.getImageData(0, 0, s, s).data;
+      let best = null, bestScore = -1, rs = 0, gs = 0, bs = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i], g = d[i + 1], b = d[i + 2];
+        const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+        const sat = mx === 0 ? 0 : (mx - mn) / mx;
+        const score = sat * (0.35 + mx / 255);
+        if (score > bestScore) { bestScore = score; best = [r, g, b]; }
+        rs += r; gs += g; bs += b; n++;
+      }
+      let rgb = best;
+      if (!rgb || bestScore < 0.12) rgb = [rs / n | 0, gs / n | 0, bs / n | 0];
+      const mix = (v) => Math.round(v * 0.82 + 40);
+      state.glow[c.id] = 'rgb(' + mix(rgb[0]) + ',' + mix(rgb[1]) + ',' + mix(rgb[2]) + ')';
+    } catch { state.glow['skip:' + c.id] = 1; }
+    paintGlow(c.id);
+  };
+  img.onerror = () => { state.glow['skip:' + c.id] = 1; };
+  img.src = c.art;
+}
+function paintGlow(id) {
+  const col = state.glow[id];
+  if (!col) return;
+  $$(`.slide[data-id="${id}"], .tile[data-id="${id}"]`).forEach(el => el.style.setProperty('--glow', col));
+}
+
+/* ---- Live lyrics (Apple offers no lyric endpoint, so we use lyrics.ovh) ---- */
+async function loadLyrics(c) {
+  if (!prefs.lyrics || !c || !c.title) return;
+  const key = c.artist + ' — ' + c.title;
+  if (key in state.lyrics || state.lyricFetch[key]) return;
+  state.lyricFetch[key] = 1;
+  const slide = $(`.slide[data-id="${c.id}"]`, feed);
+  if (slide) { const box = $('[data-lyrics]', slide); if (box) { box.hidden = false; box.innerHTML = '<span class="lyr sk"></span><span class="lyr sk"></span><span class="lyr sk"></span>'; slide.classList.remove('no-lyrics'); } }
+  try {
+    const r = await fetch('https://api.lyrics.ovh/v1/' + encodeURIComponent(c.artist) + '/' + encodeURIComponent(c.title));
+    if (!r.ok) throw new Error('no lyrics');
+    const data = await r.json();
+    const lines = String(data.lyrics || '').split('\n').map(s => s.trim()).filter(Boolean).slice(0, 60);
+    state.lyrics[key] = lines.length > 2 ? lines : null;
+  } catch { state.lyrics[key] = null; }
+  paintLyrics(c.id);
+}
+function paintLyrics(id) {
+  const c = findClip(id); const slide = $(`.slide[data-id="${id}"]`, feed);
+  if (!c || !slide) return;
+  const box = $('[data-lyrics]', slide); if (!box) return;
+  const lines = state.lyrics[c.artist + ' — ' + c.title];
+  if (!prefs.lyrics || !lines) { slide.classList.add('no-lyrics'); box.hidden = true; box.innerHTML = ''; return; }
+  slide.classList.remove('no-lyrics');
+  box.hidden = false;
+  box.innerHTML = `<div class="lyrics-lines">${lines.map((l, i) => `<span class="lyr${i === 0 ? ' on' : ''}">${esc(l)}</span>`).join('')}</div>`;
+  box.dataset.idx = '0';
+}
+function paintLyricsProgress(id, frac) {
+  const slide = $(`.slide[data-id="${id}"]`, feed); if (!slide) return;
+  const box = $('[data-lyrics]', slide); if (!box || box.hidden) return;
+  const lines = $('.lyr', box); if (!lines.length) return;
+  const idx = Math.min(lines.length - 1, Math.floor(frac * lines.length));
+  if (String(idx) === box.dataset.idx) return;
+  box.dataset.idx = String(idx);
+  lines.forEach((el, i) => el.classList.toggle('on', i === idx));
+  const inner = $('.lyrics-lines', box);
+  if (inner) inner.style.transform = 'translateY(' + (52 - idx * 27) + 'px)';
+}
+
 function slideHTML(c, i) {
   const liked = !!state.liked[c.id];
   const saved = playlistOf(c.id).length;
   return `
-  <article class="slide" data-id="${c.id}" data-index="${i}" aria-label="${esc(c.title)} by ${esc(c.artist)}">
+  <article class="slide" data-id="${c.id}" data-index="${i}" style="--glow:${glowColor(c.id, c.title)}" aria-label="${esc(c.title)} by ${esc(c.artist)}">
+    <div class="slide-glow" aria-hidden="true">
+      <img class="slide-glow-art" src="${esc(c.art)}" alt="" loading="lazy" draggable="false">
+      <div class="slide-glow-tint"></div>
+    </div>
     <div class="slide-in">
       <div class="art-box">
         <button class="art" aria-label="Play or pause ${esc(c.title)}">
@@ -1134,6 +1383,7 @@ function slideHTML(c, i) {
           <button class="rail-pl" data-act="mix" data-id="${c.id}" aria-label="Play songs like this">${icon('sparkles', { size: 18 })}</button>
         </div>
       </div>
+      <div class="lyrics" data-lyrics hidden></div>
       ${i === 0 ? `<p class="hint" aria-hidden="true">${coarse ? 'Swipe up for the next clip' : 'Scroll or press J for the next clip'}</p>` : ''}
     </div>
   </article>`;
@@ -1169,7 +1419,7 @@ const removeClipFrom = (id, plId) => {
   pl.items = pl.items.filter(it => it.id !== id);
   if (pl.items.length !== before) {
     plSave(); syncClip(id);
-    if (state.queue && state.queue.id === plId) { state.queue.items = pl.items.slice(); if (state.queue.pos >= state.queue.items.length) stopQueue(); else paintQueueBar(); }
+    if (state.queue && state.queue.source && state.queue.source.type === 'playlist' && state.queue.source.plId === plId) { state.queue.items = pl.items.slice(); if (state.queue.pos >= state.queue.items.length) stopQueue(); else paintQueueBar(); }
     renderSaved();
     toast('Removed from ' + pl.name + '.');
   }
@@ -1197,16 +1447,16 @@ function newPlaylist(name, emoji, firstClipId) {
   const pl = { id: 'pl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name.slice(0, 40), emoji: emoji || '🎵', at: Date.now(), items: [] };
   if (firstClipId) { const c = findClip(firstClipId); if (c) pl.items.push({ ...pick(c), at: Date.now() }); }
   state.playlists.unshift(pl); plSave();
-  buzz([12, 40, 12]); blip('save'); gainXp(5);
+  buzz([12, 40, 12]); blip('save');
+  if (awardOnce('playlist', state.playlists.length)) gainXp(5);
   toast('Playlist “' + pl.name + '” created.');
   renderSaved(); updateCounts();
   return pl;
 }
-function playQueue(plId, shuffled) {
-  const pl = state.playlists.find(p => p.id === plId); if (!pl || !pl.items.length) { toast('This playlist is empty.'); return; }
-  const items = pl.items.slice();
-  state.queue = { id: pl.id, name: (pl.emoji || '🎵') + ' ' + pl.name, items, pos: 0 };
-  if (shuffled) state.queue.items = shuffle(items.slice());
+function playItems(items, label, source) {
+  const list = (items || []).filter(c => c && c.audio);
+  if (!list.length) { toast('Nothing to play here yet.'); return; }
+  state.queue = { id: (source && source.plId) || 'queue', name: label, items: list.slice(), pos: 0, source: source || null };
   state.started = true; startEl.hidden = true;
   state.active = 0; state.clips = state.queue.items.map(c => ({ ...c }));
   state.seen = new Set(state.clips.map(c => c.id));
@@ -1219,7 +1469,12 @@ function playQueue(plId, shuffled) {
   paintQueueBar();
   activate(0);
   buzz([15, 40, 15]); blip('tap');
-  toast('Playing ' + pl.name + (shuffled ? ' · shuffled' : ''));
+  toast('Playing ' + label);
+}
+function playQueue(plId, shuffled) {
+  const pl = state.playlists.find(p => p.id === plId); if (!pl || !pl.items.length) { toast('This playlist is empty.'); return; }
+  const items = shuffled ? shuffle(pl.items.slice()) : pl.items.slice();
+  playItems(items, (pl.emoji || '🎵') + ' ' + pl.name, { type: 'playlist', plId: pl.id });
 }
 function stopQueue() {
   state.queue = null;
@@ -1231,7 +1486,7 @@ function nextInQueue(d) {
   const q = state.queue; if (!q) return false;
   const next = q.pos + d;
   if (next < 0) { audio.currentTime = 0; return true; }
-  if (next >= q.items.length) { stopQueue(); toast('Playlist finished 🎉'); return true; }
+  if (next >= q.items.length) { const nm = q.name; stopQueue(); toast(nm + ' finished 🎉'); return true; }
   q.pos = next;
   const el = $(`.slide[data-index="${q.pos}"]`, feed);
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1282,6 +1537,8 @@ function activate(i) {
   $('#prevBtn').disabled = i === 0;
   if (state.started && state.view === 'feed' && (state.currentId !== c.id || !state.userPaused)) playClip(c);
   paintPlaying();
+  sampleGlow(c);
+  loadLyrics(c);
   if (i >= state.clips.length - 3) loadMore();
   const nx = state.clips[i + 1];
   if (nx && state.preloaded !== nx.id) { state.preloaded = nx.id; preloader.src = nx.audio; }
@@ -1365,10 +1622,10 @@ function renderStations() {
 function likeClip(id, pt) {
   const wasOn = !!state.liked[id];
   toggleLike(id);
-  if (!wasOn && state.liked[id]) {
-    buzz([10, 40, 18]); blip('like');
-    gainXp(5, { pt }); touchStreak();
-  }
+  if (wasOn || !state.liked[id]) return;
+  buzz([10, 40, 18]); blip('like'); touchStreak();
+  if (awardOnce('like', id)) gainXp(5, { pt });
+  else toast('Liked — XP for this clip was already collected.');
 }
 function paintLike(b, id, animate) {
   const on = !!state.liked[id];
@@ -1432,6 +1689,7 @@ const searchSk = () => `
 function renderSearchEmpty() {
   searchMeta.hidden = true;
   vibesEl.hidden = false;
+  const ar = $('#artistRow'); if (ar) { ar.hidden = true; ar.innerHTML = ''; }
   searchGrid.innerHTML = `
     <div class="flex flex-col items-center rounded-3xl border border-dashed border-line px-6 py-14 text-center">
       <div class="ring">${icon('search', { size: 22 })}</div>
@@ -1439,8 +1697,44 @@ function renderSearchEmpty() {
       <p class="mt-1 max-w-[34ch] text-sm leading-relaxed text-muted">Find any song or artist instantly — or tap a vibe above to wander. Each search earns a little XP.</p>
     </div>`;
 }
+function initials(name) {
+  const parts = String(name || '?').trim().split(/\s+/).filter(Boolean);
+  return (parts.map(w => w[0]).join('').slice(0, 2) || '?').toUpperCase();
+}
+const artistColor = name => PALETTE[String(name || '').split('').reduce((h, ch) => (h + ch.charCodeAt(0)) % PALETTE.length, 0)];
+function renderArtistRow() {
+  const row = $('#artistRow'), list = state.searchArtists || [];
+  if (!list.length) { row.hidden = true; row.innerHTML = ''; return; }
+  row.hidden = false;
+  row.innerHTML = `
+    <div class="flex items-baseline justify-between gap-3">
+      <h2 class="round text-sm font-bold tracking-tight">Artists</h2>
+      <span class="text-xs text-muted">${list.length} match${list.length === 1 ? '' : 'es'}</span>
+    </div>
+    <div class="no-sb mt-3 flex gap-4 overflow-x-auto pb-1">
+      ${list.map(a => `
+        <button class="artist-chip" data-act="artist" data-artist="${a.id}" aria-label="Open ${esc(a.name)}">
+          <span class="artist-av" style="--ac:${artistColor(a.name)}"><span>${esc(initials(a.name))}</span></span>
+          <span class="min-w-0 w-full text-center">
+            <span class="block truncate text-xs font-semibold">${esc(a.name)}</span>
+            <span class="block truncate text-[11px] text-muted">${esc(a.genre)}</span>
+          </span>
+        </button>`).join('')}
+    </div>`;
+}
 function renderSearch() {
-  if (state.view !== 'search' || !state.searchResults.length) return;
+  if (state.view !== 'search') return;
+  renderArtistRow();
+  if (!state.searchResults.length) {
+    searchGrid.innerHTML = (state.searchArtists || []).length
+      ? `<div class="flex flex-col items-center rounded-3xl border border-dashed border-line px-6 py-12 text-center">
+          <div class="ring">${icon('music', { size: 22 })}</div>
+          <h2 class="round mt-4 text-base font-bold tracking-tight">No songs — but we found artists</h2>
+          <p class="mt-1 max-w-[32ch] text-sm text-muted">Tap an artist above to see their songs and play them.</p>
+        </div>`
+      : '';
+    return;
+  }
   searchGrid.innerHTML = `<div class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3">${state.searchResults.map(c => tileHTML(c, 'search')).join('')}</div>`;
   paintPlaying();
 }
@@ -1455,12 +1749,19 @@ async function doSearch(term) {
   searchGrid.innerHTML = `<div class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3">${Array(6).fill(searchSk()).join('')}</div>`;
   buzz(8);
   try {
-    const res = await provider.search(term, { limit: 24 });
+    const [res, art] = await Promise.all([
+      provider.search(term, { limit: 24 }),
+      provider.artists(term, { limit: 8 }).catch(() => [])
+    ]);
     if (state.searchTerm !== term) return;
     state.searchResults = res;
+    state.searchArtists = art;
     res.forEach(c => { state.searchMap[c.id] = c; });
     searchMeta.textContent = res.length ? `${res.length} results for “${term}”` : `No results for “${term}” — try another spelling.`;
-    if (res.length) { renderSearch(); blip('search'); gainXp(1); }
+    if (res.length || art.length) {
+      renderSearch(); blip('search');
+      if (!state.searched.has(term.toLowerCase())) { state.searched.add(term.toLowerCase()); gainXp(1); }
+    }
     else searchGrid.innerHTML = `
       <div class="flex flex-col items-center rounded-3xl border border-dashed border-line px-6 py-14 text-center">
         <div class="ring">${icon('music', { size: 22 })}</div>
@@ -1474,6 +1775,67 @@ async function doSearch(term) {
   } finally {
     if (state.searchTerm === term) state.searching = false;
   }
+}
+
+/* =====================================================================
+   Artist screen
+   ===================================================================== */
+async function openArtist(id, from) {
+  state.artistFrom = from || (state.view === 'artist' ? state.artistFrom : 'search');
+  state.artistLoading = true;
+  state.artist = { id, name: '', genre: 'Music', songs: [] };
+  showView('artist');
+  renderArtistView();
+  buzz(10); blip('tap');
+  if (awardOnce('artist', id)) gainXp(2);
+  try {
+    const data = await provider.artistSongs(id, { limit: 25 });
+    data.songs.forEach(c => { state.searchMap[c.id] = c; });
+    state.artist = { ...data.info, songs: data.songs };
+    state.artistLoading = false;
+    renderArtistView();
+    if (!data.songs.length) toast('No playable 30-second clips for that artist.');
+  } catch {
+    state.artistLoading = false;
+    state.artist = { ...state.artist, error: true };
+    renderArtistView();
+    toast("Couldn't load that artist. Check your connection.");
+  }
+}
+function renderArtistView() {
+  const a = state.artist || {};
+  const songs = a.songs || [];
+  const total = songs.length * 30;
+  $('#artistHero').innerHTML = `
+    <div class="flex items-center gap-5">
+      <span class="artist-av artist-hero-av" style="--ac:${artistColor(a.name)}"><span>${esc(initials(a.name))}</span></span>
+      <div class="min-w-0 flex-1">
+        <h1 class="round truncate text-2xl font-bold tracking-tight">${esc(a.name || 'Artist')}</h1>
+        <p class="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
+          <span class="chip" style="height:28px;padding:0 10px;font-size:12px">${esc(a.genre || 'Music')}</span>
+          <span>${state.artistLoading ? 'Loading songs…' : (a.error ? 'Could not load songs' : `${songs.length} playable clip${songs.length === 1 ? '' : 's'} · ${fmtTime(total)}`)}</span>
+        </p>
+      </div>
+    </div>
+    <div class="mt-4 flex gap-2">
+      <button class="btn-primary round flex-1 !min-h-11 text-sm" data-act="artistplay"${songs.length ? '' : ' disabled'}>Play all</button>
+      <button class="btn flex-1" data-act="artistshuffle"${songs.length ? '' : ' disabled'}>${icon('shuffle', { size: 16 })} Shuffle</button>
+    </div>`;
+  const skRow = `<div class="pl-row"><span class="pl-row-art sk"></span><span class="flex-1"><span class="sk block" style="height:14px;width:60%"></span><span class="sk mt-2 block" style="height:11px;width:35%"></span></span></div>`;
+  $('#artistSongs').innerHTML = state.artistLoading
+    ? `<h2 class="round mb-2 text-sm font-bold tracking-tight">Top songs</h2>${Array(5).fill(skRow).join('')}`
+    : (songs.length
+      ? `<h2 class="round mb-2 text-sm font-bold tracking-tight">Top songs</h2>` + songs.map((c, i) => `
+        <div class="pl-row">
+          <span class="pl-row-art"><img src="${esc(c.art)}" alt="" loading="lazy"></span>
+          <span class="min-w-0 flex-1">
+            <span class="block truncate text-sm font-semibold">${esc(c.title)}${c.explicit ? ' <span class="tag-e">E</span>' : ''}</span>
+            <span class="block truncate text-xs text-muted">${esc(c.album || a.name || '')}</span>
+          </span>
+          <button class="icon-btn !h-8 !w-8" data-act="artistsong" data-idx="${i}" aria-label="Play ${esc(c.title)}">${icon('play', { size: 16, fill: true })}</button>
+          <button class="icon-btn !h-8 !w-8" data-act="addpl" data-id="${c.id}" aria-label="Add ${esc(c.title)} to a playlist">${icon('listPlus', { size: 16 })}</button>
+        </div>`).join('')
+      : `<p class="py-10 text-center text-sm text-muted">${a.error ? 'Try again in a moment.' : 'No playable clips for this artist.'}</p>`);
 }
 
 /* =====================================================================
@@ -1590,7 +1952,11 @@ function renderSaved() {
    ===================================================================== */
 function renderProfile() {
   const li = levelInfo(stats.xp);
-  $('#pAvatar').textContent = LEVEL_EMOJI[Math.min(li.lvl - 1, LEVEL_EMOJI.length - 1)];
+  const av = profile && profile.avatar;
+  const avEl = $('#pAvatar');
+  if (av && av.type === 'img') avEl.innerHTML = `<img src="${esc(av.value)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:999px">`;
+  else avEl.textContent = (av && av.value) || LEVEL_EMOJI[Math.min(li.lvl - 1, LEVEL_EMOJI.length - 1)];
+  $('#pName').textContent = (profile && profile.name) || 'you';
   $('#pLevelBadge').textContent = 'Lvl ' + li.lvl;
   $('#stHeard').textContent = fmt(stats.heard);
   $('#stLiked').textContent = fmt(Object.keys(state.liked).length);
@@ -1598,9 +1964,19 @@ function renderProfile() {
   $('#pXpBar').style.width = Math.round(li.pct * 100) + '%';
   $('#pXpTxt').textContent = `${li.into} / ${li.need} XP`;
   $('#pXpHint').textContent = `${li.need - li.into} XP to Level ${li.lvl + 1} — listen, like and save to earn it.`;
+  const tastes = (profile && profile.tastes || []).map(id => stationLabel(id)).join(' · ');
+  $('#setName').textContent = (profile && profile.name) || 'you';
+  $('#setTastes').textContent = tastes ? 'Tastes: ' + tastes : 'No tastes picked yet';
+  const sa = $('#setAvatar');
+  if (sa) {
+    const pv = profile && profile.avatar;
+    if (pv && pv.type === 'img') sa.innerHTML = `<img src="${esc(pv.value)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:999px">`;
+    else sa.textContent = (pv && pv.value) || '🎧';
+  }
   $('#streakNow').textContent = String(stats.streak || 0);
   $('#streakBest').textContent = String(stats.best || 0);
   $('#pFlame').classList.toggle('on', (stats.streak || 0) > 0);
+  $('#pFinished').textContent = String(stats.finished || 0);
   const entries = Object.entries(stats.genres || {}).sort((a, b) => b[1] - a[1]).slice(0, 4);
   $('#genreDots').innerHTML = entries.length ? entries.map(([g, n]) => {
     const c = GENRE_COLORS[g] || PALETTE[(g.length + g.charCodeAt(0)) % PALETTE.length];
@@ -1621,11 +1997,14 @@ function playTile(id) {
 /* =====================================================================
    Views, theme, mute, toasts, settings
    ===================================================================== */
-function paintNav() { $$('.navtab, .bnav').forEach(n => n.dataset.nav === state.view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current')); }
+function paintNav() {
+  const key = state.view === 'artist' ? 'search' : state.view;
+  $$('.navtab, .bnav').forEach(n => n.dataset.nav === key ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
+}
 function showView(v) {
   if (v === state.view) { if (v === 'search') searchInput.focus(); return; }
   state.view = v;
-  viewFeed.hidden = v !== 'feed'; viewSearch.hidden = v !== 'search'; viewProfile.hidden = v !== 'profile';
+  viewFeed.hidden = v !== 'feed'; viewSearch.hidden = v !== 'search'; viewProfile.hidden = v !== 'profile'; viewArtist.hidden = v !== 'artist';
   paintNav();
   if (v === 'feed') {
     feed.scrollTop = state.active * feed.clientHeight;
@@ -1635,6 +2014,7 @@ function showView(v) {
     audio.pause();
     if (v === 'search') { if (!state.searchTerm && !state.searchResults.length) renderSearchEmpty(); setTimeout(() => searchInput.focus(), 60); }
     if (v === 'profile') { renderProfile(); renderSaved(); viewProfile.scrollTop = 0; }
+    if (v === 'artist') viewArtist.scrollTop = 0;
   }
 }
 
@@ -1667,6 +2047,7 @@ function paintSettings() {
   $('#setMuted').checked = !!prefs.muted;
   $('#setVolume').value = String(prefs.volume);
   $('#setAuto').checked = !!prefs.auto;
+  $('#setLyrics').checked = !!prefs.lyrics;
   const li = levelInfo(stats.xp);
   $('#sLevel').textContent = li.lvl;
   $('#sHeard').textContent = fmt(stats.heard);
@@ -1674,6 +2055,8 @@ function paintSettings() {
   $('#sLikes').textContent = Object.keys(state.liked).length;
   $('#sSaves').textContent = state.playlists.reduce((n, p) => n + p.items.length, 0);
   $('#sMins').textContent = fmt(Math.round(stats.seconds / 60));
+  $('#sFinished').textContent = fmt(stats.finished || 0);
+  $('#sXp').textContent = fmt(stats.xp || 0);
 }
 /* =====================================================================
    Events
@@ -1687,7 +2070,7 @@ document.addEventListener('click', e => {
     const pl = state.playlists.find(p => p.id === plId);
     if (pl && id2) {
       if (pl.items.some(it => it.id === id2)) removeClipFrom(id2, plId);
-      else { saveClipTo(id2, plId); buzz(12); blip('save'); gainXp(2); toast('Added to ' + pl.name + '.'); }
+      else { saveClipTo(id2, plId); buzz(12); blip('save'); if (awardOnce('add', id2)) gainXp(2); toast('Added to ' + pl.name + '.'); }
       renderAddPlList();
     }
     return;
@@ -1704,7 +2087,7 @@ document.addEventListener('click', e => {
     case 'share': {
       openShare(id);
       buzz(10); blip('tap');
-      gainXp(3);
+      if (awardOnce('share', id)) gainXp(3);
       break;
     }
     case 'tile': playTile(id); buzz(10); break;
@@ -1717,6 +2100,14 @@ document.addEventListener('click', e => {
     case 'plshuffle': playQueue(state.plView, true); break;
     case 'plremove': removeClipFrom(id, state.plView); break;
     case 'pltile': playTile(id); break;
+    case 'artist': openArtist(a.dataset.artist, 'search'); break;
+    case 'artistplay': if (state.artist && state.artist.songs && state.artist.songs.length) playItems(state.artist.songs, state.artist.name, { type: 'artist', artistId: state.artist.id }); break;
+    case 'artistshuffle': if (state.artist && state.artist.songs && state.artist.songs.length) playItems(shuffle(state.artist.songs.slice()), state.artist.name + ' · shuffle', { type: 'artist', artistId: state.artist.id }); break;
+    case 'artistsong': {
+      const arr = (state.artist && state.artist.songs) || [], i2 = +a.dataset.idx;
+      if (arr.length && i2 >= 0) playItems(arr.slice(i2).concat(arr.slice(0, i2)), state.artist.name, { type: 'artist', artistId: state.artist.id });
+      break;
+    }
     case 'unlike': if (state.currentId === id) audio.pause(); toggleLike(id, false); renderSaved(); renderSearch(); renderProfile(); break;
     case 'plrename': {
       const pl = state.playlists.find(p => p.id === state.plView);
@@ -1729,7 +2120,7 @@ document.addEventListener('click', e => {
     case 'pldelete': {
       const pl = state.playlists.find(p => p.id === state.plView);
       if (pl && confirm('Delete “' + pl.name + '"?')) {
-        if (state.queue && state.queue.id === pl.id) { state.queue = null; paintQueueBar(); audio.loop = true; }
+        if (state.queue && state.queue.source && state.queue.source.type === 'playlist' && state.queue.source.plId === pl.id) { state.queue = null; paintQueueBar(); audio.loop = true; }
         state.playlists = state.playlists.filter(p => p.id !== pl.id); plSave();
         state.plView = null; renderSaved(); updateCounts(); renderProfile(); toast('Playlist deleted.');
       }
@@ -1832,7 +2223,7 @@ searchInput.addEventListener('input', () => {
 searchClear.addEventListener('click', () => {
   clearTimeout(searchTimer);
   searchInput.value = ''; searchClear.hidden = true;
-  state.searchTerm = ''; state.searchResults = [];
+  state.searchTerm = ''; state.searchResults = []; state.searchArtists = [];
   searchMeta.hidden = true; vibesEl.hidden = false;
   renderSearchEmpty();
   searchInput.focus();
@@ -1850,14 +2241,19 @@ $('#prevBtn').addEventListener('click', () => go(-1));
 $('#nextBtn').addEventListener('click', () => go(1));
 $('#settingsBtn').addEventListener('click', () => { paintSettings(); settingsDlg.showModal(); buzz(10); });
 $('#copyBtn').addEventListener('click', copyLink);
+$('#artistBack').addEventListener('click', () => showView(state.artistFrom || 'search'));
 
 [settingsDlg, shareDlg, addPlDlg, plNewDlg].forEach(d => d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) d.close(); }));
 
 /* Queue bar */
 document.addEventListener('click', e => {
   const qb = e.target.closest('[data-queue-act]'); if (!qb) return;
+  if (!state.queue) return;
   if (qb.dataset.queueAct === 'stop') { stopQueue(); toast('Back to the feed.'); }
-  if (qb.dataset.queueAct === 'shuffle' && state.queue) playQueue(state.queue.id, true);
+  if (qb.dataset.queueAct === 'shuffle') {
+    if (state.queue.source && state.queue.source.type === 'playlist') playQueue(state.queue.source.plId, true);
+    else playItems(shuffle(state.queue.items.slice()), state.queue.name, state.queue.source);
+  }
 });
 
 /* New-playlist dialog */
@@ -1881,6 +2277,18 @@ $('#setMuted').addEventListener('change', e => { prefs.muted = e.target.checked;
 $('#setVolume').addEventListener('input', e => { prefs.volume = +e.target.value; audio.volume = prefs.volume; store.set('snip:prefs', prefs); });
 $('#setVolume').addEventListener('change', () => blip('tap'));
 $('#setAuto').addEventListener('change', e => { prefs.auto = e.target.checked; store.set('snip:prefs', prefs); audio.loop = state.queue && state.queue.id ? false : !prefs.auto; buzz(10); if (prefs.auto) toast('Auto-scroll on — clips advance on their own.'); });
+$('#setLyrics').addEventListener('change', e => {
+  prefs.lyrics = e.target.checked; store.set('snip:prefs', prefs); buzz(10);
+  $$('.slide[data-id]').forEach(s => {
+    if (!prefs.lyrics) { s.classList.add('no-lyrics'); const b = $('[data-lyrics]', s); if (b) b.hidden = true; }
+  });
+  if (prefs.lyrics) { const c = state.clips[state.active]; if (c) { paintLyrics(c.id); loadLyrics(c); } toast('Live lyrics on.'); }
+});
+$('#editProfile').addEventListener('click', () => { settingsDlg.close(); startOnboarding(true); });
+$('#signOutBtn').addEventListener('click', () => {
+  if (!confirm('Sign out? Your playlists and likes stay on this device.')) return;
+  settingsDlg.close(); startOnboarding(false);
+});
 shareDlg.addEventListener('click', e => {
   const t = e.target.closest('[data-share]'); if (!t) return;
   toast(`Shared to ${t.dataset.share} (demo).`); shareDlg.close();
@@ -1916,6 +2324,232 @@ function openPlNew(firstClipId) {
 }
 
 /* =====================================================================
+   Onboarding
+   ===================================================================== */
+const OB_EMOJI = ['🎧', '🎤', '🎸', '🎹', '🥁', '🎷', '🪩', '🌙', '🔥', '💜', '🌈', '🚀'];
+const OB_TASTES = [
+  { id: 'pop', label: 'Pop', emoji: '🎤' }, { id: 'hiphop', label: 'Hip-hop', emoji: '🎧' },
+  { id: 'country', label: 'Country', emoji: '🤠' }, { id: 'rock', label: 'Rock', emoji: '🎸' },
+  { id: 'rnb', label: 'R&B', emoji: '🎹' }, { id: 'latin', label: 'Latin', emoji: '💃' },
+  { id: 'dance', label: 'Dance', emoji: '🪩' }
+];
+const ob = { step: 0, name: '', pass: '', pass2: '', avatar: null, tastes: new Set(), error: '', edit: false, lock: false };
+const onboardEl = () => $('#onboard');
+
+function startOnboarding(edit) {
+  const p = store.get('snip:profile', null);
+  ob.edit = !!edit;
+  ob.name = (p && p.name) || '';
+  ob.avatar = (p && p.avatar) || null;
+  ob.pass = ''; ob.pass2 = ''; ob.error = '';
+  ob.tastes = new Set((p && p.tastes) || []);
+  if (edit) ob.step = 1;
+  else if (p && p.passHash) { ob.lock = true; ob.step = 0; }
+  else { ob.lock = false; ob.step = 0; }
+  onboardEl().hidden = false;
+  renderOnboard();
+}
+function obNext() { ob.step++; ob.error = ''; renderOnboard(); }
+function obBack() { ob.step--; ob.error = ''; renderOnboard(); }
+
+function obFeatures() {
+  const rows = [
+    ['radio', '30-second clips', 'Scroll a feed of short previews — they never stop coming.'],
+    ['sparkles', 'Mix your tastes', 'Combine genres and we blend them into one endless station.'],
+    ['listMusic', 'Playlists', 'Save any clip into a playlist you can play start to finish.'],
+    ['search', 'Search + artists', 'Find songs, then tap an artist for everything they released.'],
+    ['zap', 'XP, levels and streaks', 'Hear clips through to the end to earn the most XP.'],
+    ['mic', 'Live lyrics', 'Words scroll along with the clip. Turn them off in settings.']
+  ];
+  return `
+    <div class="flex flex-1 flex-col justify-center py-6">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-accent text-3xl">🎧</div>
+      <h1 class="round mt-5 text-3xl font-bold tracking-tight">Welcome to snip.fm</h1>
+      <p class="mt-2 text-sm leading-relaxed text-muted">Thirty seconds. One song. Next. Here is everything you can do.</p>
+      <ul class="mt-6 flex flex-col gap-3">
+        ${rows.map(([ic, t, s]) => `
+          <li class="flex items-start gap-3">
+            <span class="ring" style="width:38px;height:38px">${icon(ic, { size: 18 })}</span>
+            <span class="min-w-0"><span class="block text-sm font-semibold">${t}</span><span class="block text-xs leading-relaxed text-muted">${s}</span></span>
+          </li>`).join('')}
+      </ul>
+    </div>`;
+}
+function obWelcomeBack() {
+  return `
+    <div class="flex flex-1 flex-col justify-center py-6">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-accent text-3xl">🔐</div>
+      <h1 class="round mt-5 text-2xl font-bold tracking-tight">Welcome back${ob.name ? ', ' + esc(ob.name) : ''}</h1>
+      <p class="mt-2 text-sm text-muted">Enter your password to open your feed.</p>
+      <label class="mt-5 block text-sm font-semibold" for="obPass0">Password</label>
+      <input id="obPass0" type="password" class="mt-2 w-full rounded-2xl border border-line bg-surface px-4 text-base" style="min-height:48px" placeholder="••••••••" autocomplete="current-password">
+      ${ob.error ? `<p class="mt-2 text-xs" style="color:var(--accent)">${esc(ob.error)}</p>` : ''}
+      <div class="mt-auto pt-6">
+        <button id="obPrimary" class="btn-primary round w-full">Unlock</button>
+        <button id="obReset" class="btn mt-2 w-full text-sm">Not you? Start over</button>
+      </div>
+    </div>`;
+}
+function obNameStep() {
+  const av = ob.avatar;
+  return `
+    <div class="flex flex-1 flex-col py-6">
+      <h1 class="round text-2xl font-bold tracking-tight">Pick a name and a look</h1>
+      <p class="mt-2 text-sm text-muted">Only you see this — it lives on this device.</p>
+      <label class="mt-5 block text-sm font-semibold" for="obName">Username</label>
+      <input id="obName" value="${esc(ob.name)}" maxlength="20" placeholder="e.g. beatfinder" class="mt-2 w-full rounded-2xl border border-line bg-surface px-4 text-base" style="min-height:48px" autocomplete="off">
+      ${ob.error ? `<p class="mt-2 text-xs" style="color:var(--accent)">${esc(ob.error)}</p>` : ''}
+      <p class="mt-6 text-sm font-semibold">Profile picture</p>
+      <div class="mt-3 flex items-center gap-4">
+        <div class="avatar-ring" style="padding:3px"><div class="avatar" id="obAvPreview" style="width:72px;height:72px;font-size:30px">${av && av.type === 'img' ? `<img src="${esc(av.value)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:999px">` : esc((av && av.value) || '🎧')}</div></div>
+        <div class="min-w-0 flex-1">
+          <label class="btn w-full" for="obPhoto">${icon('camera', { size: 16 })}<span>Upload photo</span></label>
+          <input id="obPhoto" type="file" accept="image/*" class="hidden">
+          <p class="mt-2 text-xs text-muted">or pick an emoji below</p>
+        </div>
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2">
+        ${OB_EMOJI.map(e => `<button class="chip round" data-obemoji="${e}" aria-pressed="${av && av.type !== 'img' && av.value === e}">${e}</button>`).join('')}
+      </div>
+      <div class="mt-auto flex gap-2 pt-6">
+        <button id="obBack" class="btn flex-1">Back</button>
+        <button id="obPrimary" class="btn-primary round flex-1">Continue</button>
+      </div>
+    </div>`;
+}
+function obPassStep() {
+  return `
+    <div class="flex flex-1 flex-col py-6">
+      <h1 class="round text-2xl font-bold tracking-tight">Set a password</h1>
+      <p class="mt-2 text-sm text-muted">Used to unlock your feed on this device. It is hashed with SHA-256 and never sent anywhere.</p>
+      <label class="mt-5 block text-sm font-semibold" for="obPass">Password</label>
+      <input id="obPass" type="password" class="mt-2 w-full rounded-2xl border border-line bg-surface px-4 text-base" style="min-height:48px" placeholder="At least 4 characters" autocomplete="new-password">
+      <label class="mt-4 block text-sm font-semibold" for="obPass2">Confirm password</label>
+      <input id="obPass2" type="password" class="mt-2 w-full rounded-2xl border border-line bg-surface px-4 text-base" style="min-height:48px" autocomplete="new-password">
+      ${ob.error ? `<p class="mt-3 text-xs" style="color:var(--accent)">${esc(ob.error)}</p>` : ''}
+      <div class="mt-auto flex gap-2 pt-6">
+        <button id="obBack" class="btn flex-1">Back</button>
+        <button id="obPrimary" class="btn-primary round flex-1">Continue</button>
+      </div>
+    </div>`;
+}
+function obTasteStep() {
+  return `
+    <div class="flex flex-1 flex-col py-6">
+      <h1 class="round text-2xl font-bold tracking-tight">What are you into?</h1>
+      <p class="mt-2 text-sm text-muted">Pick at least one — we will mix them into your feed. Change anytime with the chips up top.</p>
+      <div class="mt-5 flex flex-wrap gap-2">
+        ${OB_TASTES.map(t => `<button class="chip round" data-obtaste="${t.id}" aria-pressed="${ob.tastes.has(t.id)}">${t.emoji} ${t.label}</button>`).join('')}
+      </div>
+      ${ob.error ? `<p class="mt-3 text-xs" style="color:var(--accent)">${esc(ob.error)}</p>` : ''}
+      <div class="mt-auto flex gap-2 pt-6">
+        <button id="obBack" class="btn flex-1">Back</button>
+        <button id="obPrimary" class="btn-primary round flex-1">Create my feed</button>
+      </div>
+    </div>`;
+}
+function obDoneStep() {
+  return `
+    <div class="flex flex-1 flex-col items-center justify-center py-6 text-center">
+      <div class="avatar-ring" style="padding:4px"><div class="avatar" style="width:88px;height:88px;font-size:36px">${ob.avatar && ob.avatar.type === 'img' ? `<img src="${esc(ob.avatar.value)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:999px">` : esc((ob.avatar && ob.avatar.value) || '🎧')}</div></div>
+      <h1 class="round mt-5 text-2xl font-bold tracking-tight">You are all set, ${esc(ob.name || 'friend')}</h1>
+      <p class="mt-2 max-w-[34ch] text-sm leading-relaxed text-muted">Your feed is tuned to ${[...ob.tastes].map(id => stationLabel(id)).join(' · ') || 'For You'}. Scroll, listen, and finish clips for the big XP.</p>
+      <button id="obStart" class="btn-primary round mt-7 w-full">Start listening</button>
+    </div>`;
+}
+function renderOnboard() {
+  const body = $('#obBody');
+  if (ob.step === 0 && ob.lock) body.innerHTML = obWelcomeBack();
+  else if (ob.step === 0) body.innerHTML = obFeatures();
+  else if (ob.step === 1) body.innerHTML = obNameStep();
+  else if (ob.step === 2) body.innerHTML = obPassStep();
+  else if (ob.step === 3) body.innerHTML = obTasteStep();
+  else body.innerHTML = obDoneStep();
+  const focus = { 1: '#obName', 2: '#obPass', 0: ob.lock ? '#obPass0' : null }[ob.step];
+  if (focus) setTimeout(() => $(focus) && $(focus).focus(), 60);
+}
+async function obAdvance() {
+  if (ob.step === 0 && ob.lock) {
+    const val = $('#obPass0').value;
+    const h = await hashPass(val);
+    const p = store.get('snip:profile', null) || {};
+    if (h !== p.passHash) { ob.error = 'That password does not match.'; renderOnboard(); buzz([10, 40, 10]); return; }
+    ob.lock = false; finishOnboarding();
+    return;
+  }
+  if (ob.step === 0) return obNext();
+  if (ob.step === 1) {
+    const name = $('#obName').value.trim();
+    if (name.length < 2) { ob.error = 'Use at least 2 characters.'; return renderOnboard(); }
+    ob.name = name; return obNext();
+  }
+  if (ob.step === 2) {
+    const p1 = $('#obPass').value, p2 = $('#obPass2').value;
+    if (p1.length < 4) { ob.error = 'Password needs at least 4 characters.'; return renderOnboard(); }
+    if (p1 !== p2) { ob.error = 'Those passwords do not match.'; return renderOnboard(); }
+    ob.pass = p1; return obNext();
+  }
+  if (ob.step === 3) {
+    if (!ob.tastes.size) { ob.error = 'Pick at least one genre.'; return renderOnboard(); }
+    return obNext();
+  }
+  finishOnboarding();
+}
+async function finishOnboarding() {
+  const passHash = ob.pass ? await hashPass(ob.pass) : (store.get('snip:profile', null) || {}).passHash || null;
+  const p = { name: ob.name || 'you', avatar: ob.avatar || { type: 'emoji', value: '🎧' }, passHash, tastes: [...ob.tastes], onboarded: true, at: Date.now() };
+  store.set('snip:profile', p);
+  if (p.tastes.length) { state.stations = new Set(p.tastes); store.set('snip:stations', [...state.stations]); renderStations(); }
+  onboardEl().hidden = true;
+  renderProfile();
+  if (ob.edit && state.started) { toast('Profile updated.'); return; }
+  state.started = true; startEl.hidden = true;
+  setStation();
+  showView('feed');
+  buzz([15, 40, 15]); blip('tap');
+  toast('Welcome' + (p.name && p.name !== 'you' ? ', ' + p.name : '') + ' — pick a clip and listen through for XP.');
+}
+onboardEl().addEventListener('click', async e => {
+  const prim = e.target.closest('#obPrimary, #obStart');
+  if (prim) return obAdvance();
+  if (e.target.closest('#obBack')) return obBack();
+  if (e.target.closest('#obReset')) { ob.lock = false; ob.step = 0; ob.name = ''; ob.avatar = null; ob.tastes = new Set(); renderOnboard(); return; }
+  const em = e.target.closest('[data-obemoji]');
+  if (em) {
+    ob.avatar = { type: 'emoji', value: em.dataset.obemoji };
+    return renderOnboard();
+  }
+  const tt = e.target.closest('[data-obtaste]');
+  if (tt) {
+    const id = tt.dataset.obtaste;
+    if (ob.tastes.has(id)) ob.tastes.delete(id); else ob.tastes.add(id);
+    ob.error = '';
+    return renderOnboard();
+  }
+});
+onboardEl().addEventListener('change', e => {
+  if (e.target.id !== 'obPhoto') return;
+  const file = e.target.files && e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const size = 256, cv = document.createElement('canvas');
+        const scale = Math.min(size / img.width, size / img.height, 1);
+        cv.width = Math.round(img.width * scale); cv.height = Math.round(img.height * scale);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        ob.avatar = { type: 'img', value: cv.toDataURL('image/jpeg', 0.82) };
+      } catch { ob.avatar = { type: 'img', value: reader.result }; }
+      renderOnboard();
+    };
+    img.onerror = () => { ob.avatar = { type: 'img', value: reader.result }; renderOnboard(); };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+/* =====================================================================
    Boot
    ===================================================================== */
 async function init() {
@@ -1930,6 +2564,8 @@ async function init() {
     state.playlists = store.get('snip:playlists');
   }
   applyTheme();
+  const pf = store.get('snip:profile', null);
+  if (!pf || !pf.onboarded) { startOnboarding(false); }
   paintMute(); renderStations(); renderVibes(); renderSearchEmpty(); paintNav(); renderProfile(); renderSaved(); updateCounts(); updateStart();
   state.pool = buildPool([...state.stations]);
   feed.innerHTML = skeleton();
