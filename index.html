@@ -223,9 +223,10 @@
   .slide.user-paused .paused-badge { opacity: 1; transform: none; }
 
   /* Blurred art scrim behind the focused clip */
+  .slide { overflow: hidden; }
   .art-scrim {
     position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .25s;
-    filter: blur(28px) saturate(1.4) brightness(.55); transform: scale(1.25);
+    filter: blur(30px) saturate(1.85) brightness(.62); transform: scale(1.25);
     object-fit: cover; width: 100%; height: 100%;
   }
   .slide.on-stage .art-scrim, .slide.user-paused .art-scrim { opacity: 1; }
@@ -343,16 +344,30 @@
   .artist-hero-av > span { font-size: 34px; }
 
   /* ---------- Album glow: the artwork's colors bleed onto the screen ---------- */
-  .slide-glow { position: absolute; inset: -12%; z-index: 0; overflow: hidden; opacity: 0; transition: opacity .55s ease; }
+  .slide-glow { position: absolute; inset: -18%; z-index: 0; overflow: hidden; opacity: 0; transition: opacity .6s ease; }
   .slide.on-stage .slide-glow { opacity: 1; }
-  .slide-glow-art { width: 100%; height: 100%; object-fit: cover; filter: blur(70px) saturate(2.1) brightness(1.06); transform: scale(1.22); }
-  .dark .slide-glow-art { filter: blur(70px) saturate(1.9) brightness(.72); }
+  .slide-glow-art { width: 100%; height: 100%; object-fit: cover; filter: blur(64px) saturate(2.8) brightness(1.12); transform: scale(1.32); }
+  .dark .slide-glow-art { filter: blur(64px) saturate(2.4) brightness(.9); }
+  .slide-glow-bloom {
+    position: absolute; left: 50%; top: 32%; width: 86%; aspect-ratio: 1; transform: translate(-50%, -50%);
+    border-radius: 50%; filter: blur(34px); pointer-events: none;
+    background: radial-gradient(circle, color-mix(in srgb, var(--glow, var(--accent)) 90%, transparent), transparent 66%);
+    animation: bloom 7s ease-in-out infinite;
+  }
+  @keyframes bloom {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: .5; }
+    50% { transform: translate(-50%, -50%) scale(1.14); opacity: .74; }
+  }
   .slide-glow-tint {
     position: absolute; inset: 0;
     background:
-      radial-gradient(118% 74% at 50% 24%, color-mix(in srgb, var(--glow, var(--accent)) 55%, transparent), transparent 72%),
-      linear-gradient(180deg, color-mix(in srgb, var(--bg) 40%, transparent) 0%, color-mix(in srgb, var(--bg) 72%, transparent) 56%, var(--bg) 96%);
+      radial-gradient(126% 82% at 50% 20%, color-mix(in srgb, var(--glow, var(--accent)) 82%, transparent), transparent 70%),
+      radial-gradient(84% 56% at 8% 86%, color-mix(in srgb, var(--glow, var(--accent)) 55%, transparent), transparent 74%),
+      radial-gradient(84% 56% at 94% 4%, color-mix(in srgb, var(--glow, var(--accent)) 48%, transparent), transparent 72%),
+      linear-gradient(180deg, color-mix(in srgb, var(--bg) 24%, transparent) 0%, color-mix(in srgb, var(--bg) 62%, transparent) 54%, var(--bg) 94%);
   }
+  .slide.on-stage .title { text-shadow: 0 0 30px color-mix(in srgb, var(--glow, var(--accent)) 65%, transparent); }
+  .slide.on-stage .ticks i:not(.on):not(.cur) { background: color-mix(in srgb, var(--glow, var(--accent)) 34%, transparent); }
   .ticks i.cur { background: var(--glow, var(--accent)); }
   .rail-btn.on { color: var(--glow, var(--accent)); }
   .rail-pl { background: var(--glow, var(--accent)); }
@@ -552,6 +567,27 @@
   .gbar-track { height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
   .gbar-fill { height: 100%; border-radius: 999px; transition: width .5s var(--spring); }
   #profBio { resize: vertical; min-height: 84px; }
+  /* ---------- Profile: section rhythm + action rows ---------- */
+  .sec-h { margin-top: 22px; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .list { margin-top: 8px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); overflow: hidden; }
+  .list-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 12px 16px; text-align: left; transition: background .12s, opacity .12s, transform .12s var(--spring); }
+  .list-row + .list-row { border-top: 1px solid var(--line); }
+  .list-row:hover { background: var(--surface-2); }
+  .list-row:active { transform: scale(.99); }
+  .list-row:disabled { opacity: .45; cursor: not-allowed; }
+  .list-ic { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 999px; background: var(--surface-2); color: var(--fg); }
+  .list-tail { flex: none; color: var(--muted); }
+  .flame.sm { width: 42px; height: 42px; font-size: 20px; }
+
+  /* ---------- Global rank ---------- */
+  .rank-you { border: 1px solid var(--line); border-radius: 20px; padding: 14px; background: var(--surface); }
+  .rank-list { margin-top: 8px; max-height: 46vh; overflow-y: auto; border: 1px solid var(--line); border-radius: 20px; }
+  .rank-row { display: flex; align-items: center; gap: 12px; padding: 9px 14px; text-align: left; width: 100%; }
+  .rank-row + .rank-row { border-top: 1px solid var(--line); }
+  .rank-row.me { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .rank-num { flex: none; width: 32px; font-size: 12px; font-weight: 800; color: var(--muted); }
+  .rank-av { display: grid; place-items: center; width: 34px; height: 34px; flex: none; border-radius: 999px; background: var(--surface-2); font-size: 17px; overflow: hidden; }
+  .rank-av img { width: 100%; height: 100%; object-fit: cover; }
   .ob-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--line); transition: background .25s, width .25s var(--spring); }
   .ob-dot.on { background: var(--accent); width: 18px; }
 </style>
@@ -664,54 +700,74 @@
           <p id="pBio" class="bio mt-1 text-sm text-muted">30 seconds at a time 🎧</p>
         </div>
 
-        <div class="card mt-5">
+        <p class="sec-h">Momentum</p>
+        <div class="card mt-2">
           <div class="flex items-center justify-between gap-3">
             <span class="flex items-center gap-2 text-sm font-semibold"><span class="text-accent" data-i="zap" data-s="16"></span>Level progress</span>
             <span class="mono text-xs text-muted" id="pXpTxt">0 / 100 XP</span>
           </div>
           <div class="lvl-bar mt-3"><div id="pXpBar"></div></div>
           <p class="mt-2 text-xs text-muted" id="pXpHint"></p>
+
+          <div class="mt-4 flex items-center gap-4 border-t border-line pt-4">
+            <div class="goal-wrap" role="img" id="goalWrap" aria-label="Today's listening goal">
+              <svg class="goal-svg" viewBox="0 0 86 86" aria-hidden="true">
+                <circle class="goal-bg" cx="43" cy="43" r="36"></circle>
+                <circle class="goal-fg" id="goalRing" cx="43" cy="43" r="36" stroke-dasharray="226.2" stroke-dashoffset="226.2"></circle>
+              </svg>
+              <div class="goal-mid"><span><b id="goalPct" class="mono">0%</b><br><span id="goalTxt">0/10 min</span></span></div>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-semibold">Today's listening goal</p>
+              <p class="mt-0.5 text-xs text-muted" id="goalHint">Listen a few minutes to keep the fire going.</p>
+              <p class="mt-1 text-xs font-semibold" id="goalDone" hidden>🎉 Goal reached today</p>
+            </div>
+          </div>
+
+          <div class="mt-4 flex items-center gap-3 border-t border-line pt-4">
+            <span class="flame sm" id="pFlame">🔥</span>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-semibold"><span id="streakNow" class="mono">0</span>-day listening streak</p>
+              <p class="mt-0.5 text-xs text-muted">Best: <span id="streakBest" class="mono">0</span> days</p>
+              <p class="mt-1 text-xs font-semibold" id="freezeTag" hidden>🧊 <span id="freezeCount" class="mono">0</span> streak freeze ready</p>
+            </div>
+          </div>
         </div>
 
-        <div class="card mt-3 flex items-center gap-4">
-          <div class="goal-wrap" role="img" id="goalWrap" aria-label="Today's listening goal">
-            <svg class="goal-svg" viewBox="0 0 86 86" aria-hidden="true">
-              <circle class="goal-bg" cx="43" cy="43" r="36"></circle>
-              <circle class="goal-fg" id="goalRing" cx="43" cy="43" r="36" stroke-dasharray="226.2" stroke-dashoffset="226.2"></circle>
-            </svg>
-            <div class="goal-mid"><span><b id="goalPct" class="mono">0%</b><br><span id="goalTxt">0/10 min</span></span></div>
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-semibold">Today's listening goal</p>
-            <p class="mt-0.5 text-xs text-muted" id="goalHint">Listen a few minutes to keep the fire going.</p>
-            <p class="mt-2 text-xs font-semibold" id="goalDone" hidden>🎉 Goal reached today</p>
-          </div>
-        </div>
-
-        <div class="card mt-3 flex items-center gap-4">
-          <div class="flame" id="pFlame">🔥</div>
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-semibold"><span id="streakNow" class="mono">0</span>-day listening streak</p>
-            <p class="mt-0.5 text-xs text-muted">Come back tomorrow to keep it alive · best: <span id="streakBest" class="mono">0</span></p>
-            <p class="mt-2 text-xs font-semibold" id="freezeTag" hidden>🧊 <span id="freezeCount" class="mono">0</span> streak freeze ready</p>
-          </div>
-        </div>
-
-        <div class="card mt-3">
+        <p class="sec-h">This week</p>
+        <div class="card mt-2">
           <div class="crumb-head">
-            <span class="flex items-center gap-2 text-sm font-semibold"><span class="text-accent" data-i="calendar" data-s="16"></span>This week</span>
-            <button id="recapBtn" class="btn !min-h-9 px-4 text-[13px]">Weekly recap</button>
+            <span class="flex items-center gap-2 text-sm font-semibold"><span class="text-accent" data-i="calendar" data-s="16"></span>Weekly recap</span>
+            <button id="recapBtn" class="btn !min-h-9 px-4 text-[13px]">Open</button>
           </div>
           <p class="mt-1 text-xs text-muted" id="weekLine">Nothing tracked yet this week — play a clip to start.</p>
         </div>
 
-        <div class="mt-6">
-          <div class="flex items-baseline justify-between gap-3">
-            <h2 class="round text-sm font-bold tracking-tight">Your vibe mix</h2>
-            <span class="flex items-center gap-2">
-              <span class="text-xs text-muted">🎧 <span id="pFinished" class="mono">0</span> finished</span>
-              <button id="mixPlay" class="btn !min-h-9 px-3 text-[13px]">Play</button>
+        <p class="sec-h">Earn XP</p>
+        <div class="list">
+          <button class="list-row" id="xpLinkBtn">
+            <span class="list-ic" data-i="zap" data-s="18"></span>
+            <span class="min-w-0 flex-1">
+              <span class="block text-sm font-semibold">Tap this link to earn XP</span>
+              <span class="block text-xs text-muted" id="xpLinkMeta">Opens a sponsor link in a new tab</span>
             </span>
+            <span class="list-tail" data-i="externalLink" data-s="16"></span>
+          </button>
+          <button class="list-row" id="rankBtn">
+            <span class="list-ic" data-i="trophy" data-s="18"></span>
+            <span class="min-w-0 flex-1">
+              <span class="block text-sm font-semibold">Global rank</span>
+              <span class="block text-xs text-muted">See how you stack up against other listeners</span>
+            </span>
+            <span class="tag-mini" id="rankPill">#—</span>
+          </button>
+        </div>
+
+        <p class="sec-h">Your vibe</p>
+        <div class="mt-2">
+          <div class="flex items-center justify-between gap-3">
+            <span class="text-xs text-muted">🎧 <span id="pFinished" class="mono">0</span> clips finished</span>
+            <button id="mixPlay" class="btn !min-h-9 px-3 text-[13px]">Play vibe mix</button>
           </div>
           <div id="genreDots" class="no-sb mt-3 flex gap-5 overflow-x-auto pb-1"></div>
         </div>
@@ -956,6 +1012,17 @@
     <div id="profTastes" class="mt-2 flex flex-wrap gap-2"></div>
 
     <button id="profSave" class="btn-primary round mt-5 w-full">Save profile</button>
+  </div>
+</dialog>
+
+<!-- Global rank (mock ladder) -->
+<dialog id="rankDlg" aria-labelledby="rankHeading">
+  <div class="p-5">
+    <div class="flex items-center justify-between">
+      <h2 id="rankHeading" class="round text-base font-bold tracking-tight">Global rank</h2>
+      <button class="icon-btn -mr-2" data-close aria-label="Close" data-i="x"></button>
+    </div>
+    <div id="rankBody" class="mt-4"></div>
   </div>
 </dialog>
 
@@ -1206,6 +1273,9 @@ const I = {
   trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
   mic: '<path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="18" y2="22"/>',
   shuffle: '<path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/>',
+  chevronRight: '<path d="m9 18 6-6-6-6"/>',
+  externalLink: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  trophy: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
   calendar: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/>',
   download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
   sparkles: '<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>'
@@ -1342,7 +1412,7 @@ const startEl = $('#start'), startBtn = $('#startBtn'), startCopy = $('#startCop
 const stationsEl = $('#stations'), toasts = $('#toasts');
 const shareDlg = $('#shareDlg'), settingsDlg = $('#settingsDlg');
 const addPlDlg = $('#addPlDlg'), plNewDlg = $('#plNewDlg');
-const recapDlg = $('#recapDlg'), profDlg = $('#profDlg');
+const recapDlg = $('#recapDlg'), profDlg = $('#profDlg'), rankDlg = $('#rankDlg');
 const searchInput = $('#searchInput'), searchClear = $('#searchClear'), searchMeta = $('#searchMeta');
 const searchGrid = $('#searchGrid'), vibesEl = $('#vibes'), viewArtist = $('#viewArtist');
 const coarse = matchMedia('(pointer: coarse)').matches;
@@ -1544,6 +1614,7 @@ function slideHTML(c, i) {
   <article class="slide" data-id="${c.id}" data-index="${i}" style="--glow:${glowColor(c.id, c.title)}" aria-label="${esc(c.title)} by ${esc(c.artist)}">
     <div class="slide-glow" aria-hidden="true">
       <img class="slide-glow-art" src="${esc(c.art)}" alt="" loading="lazy" draggable="false">
+      <div class="slide-glow-bloom"></div>
       <div class="slide-glow-tint"></div>
     </div>
     <div class="slide-in">
@@ -1727,6 +1798,10 @@ function activate(i) {
   if (state.queue && state.queue.id) { state.queue.pos = i; paintQueueBar(); }
   $$('.slide.active', feed).forEach(el => el.classList.remove('active'));
   const el = activeSlide(); if (el) el.classList.add('active');
+  /* BUG FIX: `on-stage` was styled but never applied, so the album-art glow and
+     the blurred scrim stayed at opacity 0 for every clip. */
+  $$('.slide.on-stage', feed).forEach(s => { if (s !== el) s.classList.remove('on-stage'); });
+  if (el) el.classList.add('on-stage');
   if (i > 0) feed.classList.add('moved');
   $('#prevBtn').disabled = i === 0;
   if (state.started && state.view === 'feed' && (state.currentId !== c.id || !state.userPaused)) playClip(c);
@@ -1754,6 +1829,8 @@ function updateStart() {
 
 async function loadMore() {
   if (state.loading || state.done || Date.now() < state.retryAfter) return;
+  /* BUG FIX: an empty station pool made state.pool[i] undefined and threw mid-load. */
+  if (!state.pool || !state.pool.length) state.pool = buildPool(['foryou']);
   state.loading = true;
   const token = state.token;
   if (state.clips.length) showTail();
@@ -2174,6 +2251,8 @@ function renderProfile() {
   const bioEl = $('#pBio');
   if (bioEl) bioEl.textContent = (profile && profile.bio) || '30 seconds at a time 🎧';
   paintGoal();
+  paintXpLink();
+  paintRankPill();
   const entries = Object.entries(stats.genres || {}).sort((a, b) => b[1] - a[1]).slice(0, 4);
   $('#genreDots').innerHTML = entries.length ? entries.map(([g, n]) => {
     const c = GENRE_COLORS[g] || PALETTE[(g.length + g.charCodeAt(0)) % PALETTE.length];
@@ -2391,7 +2470,7 @@ addEventListener('keydown', e => {
     case ' ': e.preventDefault(); togglePlay(); break;
     case 'l': if (c) likeClip(c.id, artPt()); break;
     case 's': if (c) openAddPl(c.id); break;
-    case 'm': prefs.muted = !prefs.muted; store.set('snip:prefs', prefs); paintMute(); buzz(10); break;
+    case 'm': prefs.muted = !prefs.muted; store.set('snip:prefs', prefs); paintMute(); buzz(10); toast(prefs.muted ? 'Muted.' : 'Sound on.'); break;
   }
 });
 
@@ -2453,7 +2532,7 @@ $('#settingsBtn').addEventListener('click', () => { paintSettings(); settingsDlg
 $('#copyBtn').addEventListener('click', copyLink);
 $('#artistBack').addEventListener('click', () => showView(state.artistFrom || 'search'));
 
-[settingsDlg, shareDlg, addPlDlg, plNewDlg, recapDlg, profDlg].forEach(d => d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) d.close(); }));
+[settingsDlg, shareDlg, addPlDlg, plNewDlg, recapDlg, profDlg, rankDlg].forEach(d => d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) d.close(); }));
 
 /* Queue bar */
 document.addEventListener('click', e => {
@@ -2515,6 +2594,8 @@ profDlg.addEventListener('change', e => {
 $('#recapBtn').addEventListener('click', () => openRecap());
 $('#recapBtn2').addEventListener('click', () => { settingsDlg.close(); openRecap(); });
 $('#mixPlay').addEventListener('click', () => playVibeMix());
+$('#xpLinkBtn').addEventListener('click', claimXpLink);
+$('#rankBtn').addEventListener('click', openRank);
 $$('.seg-btn[data-goal]').forEach(b => b.addEventListener('click', () => {
   prefs.goalMin = +b.dataset.goal; savePrefs(); paintSettings(); paintGoal(); buzz(10);
   toast('Daily goal set to ' + prefs.goalMin + ' minutes.');
@@ -2744,6 +2825,130 @@ function saveProfEdit() {
   buzz([12, 30, 12]); blip('tap');
   toast('Profile updated.');
 }
+
+/* =====================================================================
+   Sponsor link: XP with a 5s cooldown and an hourly cap
+   ===================================================================== */
+const XP_LINK = 'https://www.profitableratecpmnetwork.com/yfdyyspb4h?key=23c864a9f781625884d9c443a639a82c';
+const XP_LINK_XP = 15, XP_LINK_COOL = 5000, XP_LINK_PER_HOUR = 5;
+const xpLink = Object.assign({ last: 0, hits: [] }, store.get('snip:xplink', {}));
+const saveXpLink = () => store.set('snip:xplink', xpLink);
+function xpLinkHits() {
+  const now = Date.now();
+  xpLink.hits = (xpLink.hits || []).filter(t => now - t < 36e5);
+  return xpLink.hits;
+}
+function xpLinkStatus() {
+  return {
+    cool: Math.max(0, XP_LINK_COOL - (Date.now() - (xpLink.last || 0))),
+    left: Math.max(0, XP_LINK_PER_HOUR - xpLinkHits().length)
+  };
+}
+let xpLinkTimer = null;
+function paintXpLink() {
+  const btn = $('#xpLinkBtn'), meta = $('#xpLinkMeta');
+  if (!btn || !meta) return;
+  const { cool, left } = xpLinkStatus();
+  const waiting = cool > 0, spent = left <= 0;
+  btn.disabled = waiting || spent;
+  meta.textContent = spent
+    ? 'Hourly limit reached — come back within the hour'
+    : waiting
+      ? 'Cooling down · ' + Math.ceil(cool / 1000) + 's'
+      : '+' + XP_LINK_XP + ' XP · opens in a new tab · ' + left + ' left this hour';
+  clearTimeout(xpLinkTimer);
+  if (waiting) xpLinkTimer = setTimeout(paintXpLink, 400);
+}
+function claimXpLink() {
+  const { cool, left } = xpLinkStatus();
+  if (cool > 0) { toast('Cooling down — ' + Math.ceil(cool / 1000) + 's to go.'); return; }
+  if (left <= 0) { toast('Hourly limit reached. Come back later for more XP.'); return; }
+  const tab = window.open(XP_LINK, '_blank', 'noopener,noreferrer');
+  if (!tab) toast('Your browser blocked the tab — allow pop-ups for snip.fm to get the most out of this.');
+  xpLink.last = Date.now();
+  xpLinkHits().push(Date.now());
+  saveXpLink();
+  const btn = $('#xpLinkBtn'), r = btn && btn.getBoundingClientRect();
+  gainXp(XP_LINK_XP, { pt: r ? { x: r.left + 48, y: r.top + 18 } : null });
+  buzz([12, 30, 12]); blip('save');
+  toast('+' + XP_LINK_XP + ' XP — thanks for supporting snip.fm.');
+  paintXpLink();
+}
+
+/* =====================================================================
+   Global rank (demo ladder until there is a real backend)
+   ===================================================================== */
+const RANK_HANDLES = [
+  'beatfinder', 'lofi.luna', 'midnightmara', 'crate.diver', 'tempo.tia', 'basslineben',
+  'vinylvera', '808santi', 'echoezra', 'hifinoor', 'subwoofy', 'pulse.ivan',
+  'groovegab', 'snare.sam', 'riffs.remy', 'melodymo', 'dropdead.d', 'wavvy.wes',
+  'chill.carl', 'nova.nia', 'tape.deck', 'reverb.ray'
+];
+const seedOf = str => { let h = 2166136261; for (const ch of String(str)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; };
+function rankPeers() {
+  return RANK_HANDLES.map(name => {
+    const h = seedOf(name), r = (h % 1000) / 1000;
+    const xp = Math.round(40 + Math.pow(r, 1.75) * 5400);
+    return {
+      name, xp, me: false,
+      avatar: { type: 'emoji', value: OB_EMOJI[h % OB_EMOJI.length] },
+      clips: 20 + (h % 320), streak: 1 + (h % 21), finished: 4 + (h % 94)
+    };
+  });
+}
+function rankRows() {
+  const me = {
+    name: (profile && profile.name) || 'you', xp: stats.xp || 0, me: true,
+    avatar: (profile && profile.avatar) || { type: 'emoji', value: '🎧' },
+    clips: stats.heard || 0, streak: stats.streak || 0, finished: stats.finished || 0
+  };
+  return rankPeers().concat([me]).sort((a, b) => (b.xp - a.xp) || (a.me ? -1 : b.me ? 1 : 0));
+}
+const myRank = () => { const rows = rankRows(); return { rows, place: rows.findIndex(r => r.me) + 1, total: rows.length }; };
+const avatarHTML = a => (a && a.type === 'img')
+  ? `<img src="${esc(a.value)}" alt="">`
+  : esc((a && a.value) || '🎧');
+function paintRankPill() {
+  const p = $('#rankPill'); if (!p) return;
+  const { place, total } = myRank();
+  p.textContent = '#' + place;
+  p.title = place + ' of ' + total + ' listeners';
+}
+const RANK_MEDAL = ['👑', '🥈', '🥉'];
+function renderRank() {
+  const { rows, place, total } = myRank();
+  const me = rows[place - 1];
+  $('#rankBody').innerHTML = `
+    <div class="rank-you flex items-center gap-4">
+      <span class="avatar-ring" style="padding:3px"><span class="avatar" style="width:56px;height:56px;font-size:24px">${avatarHTML(me.avatar)}</span></span>
+      <div class="min-w-0 flex-1">
+        <p class="round truncate text-base font-bold tracking-tight">${esc(me.name)}</p>
+        <p class="text-xs text-muted">Rank <b class="mono">#${place}</b> of ${total} listeners</p>
+      </div>
+      <span class="tag-mini">Lvl ${levelInfo(stats.xp).lvl}</span>
+    </div>
+    <div class="stat-grid sm mt-3">
+      <div class="stat-card"><p class="stat-num">${fmt(me.xp)}</p><p class="stat-lab">XP</p></div>
+      <div class="stat-card"><p class="stat-num">${fmt(me.clips)}</p><p class="stat-lab">Clips</p></div>
+      <div class="stat-card"><p class="stat-num">${fmt(me.finished)}</p><p class="stat-lab">Finished</p></div>
+      <div class="stat-card"><p class="stat-num">${me.streak}</p><p class="stat-lab">Streak</p></div>
+    </div>
+    <p class="sec-h">The ladder</p>
+    <div class="rank-list">
+      ${rows.map((r, k) => `
+        <div class="rank-row${r.me ? ' me' : ''}">
+          <span class="rank-num">${k < 3 ? RANK_MEDAL[k] : '#' + (k + 1)}</span>
+          <span class="rank-av">${avatarHTML(r.avatar)}</span>
+          <span class="min-w-0 flex-1">
+            <span class="block truncate text-sm font-semibold">${esc(r.name)}${r.me ? ' <span class="tag-mini">you</span>' : ''}</span>
+            <span class="block truncate text-[11px] text-muted">Lvl ${levelInfo(r.xp).lvl} · ${fmt(r.clips)} clips · 🔥 ${r.streak}</span>
+          </span>
+          <span class="mono text-xs font-bold">${fmt(r.xp)}</span>
+        </div>`).join('')}
+    </div>
+    <p class="mt-3 text-xs text-muted">The other listeners are demo data while your profile lives on this device. Finish clips, hold your streak and tap the XP link to climb.</p>`;
+}
+function openRank() { renderRank(); rankDlg.showModal(); buzz(10); }
 
 /* =====================================================================
    Onboarding

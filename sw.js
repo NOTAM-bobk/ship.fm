@@ -1,6 +1,6 @@
 /* snip.fm service worker — offline shell + runtime caching.
    Bump CACHE when the shell changes so clients pick up the new build. */
-const CACHE = 'snipfm-v1';
+const CACHE = 'snipfm-v2';
 const SHELL = [
   './',
   './index.html',
@@ -10,7 +10,7 @@ const SHELL = [
   './icons/maskable-512.png',
   './icons/apple-touch-icon.png'
 ];
-const ART_CACHE = 'snipfm-art-v1';
+const ART_CACHE = 'snipfm-art-v2';
 const ART_MAX = 160;
 
 self.addEventListener('install', event => {
@@ -57,11 +57,14 @@ async function networkFirst(request, fallback) {
 /* Serve from cache, refresh in the background. */
 async function staleWhileRevalidate(request, cacheName) {
   const cache = await caches.open(cacheName);
-  const hit = await cache.match(request);
+  let hit = await cache.match(request);
+  /* An opaque (no-cors) copy is unreadable, so handing it to a CORS request
+     would taint the album-art canvas and break colour sampling. Never reuse it. */
+  const wantsCors = request.mode !== 'no-cors';
+  if (hit && wantsCors && hit.type === 'opaque') hit = undefined;
   const network = fetch(request).then(res => {
-    if (res && (res.ok || res.type === 'opaque')) {
-      cache.put(request, res.clone()).then(() => trim(cacheName, ART_MAX)).catch(() => {});
-    }
+    const storable = res && res.ok && !(res.type === 'opaque' && wantsCors);
+    if (storable) cache.put(request, res.clone()).then(() => trim(cacheName, ART_MAX)).catch(() => {});
     return res;
   }).catch(() => null);
   return hit || (await network) || new Response('', { status: 504, statusText: 'Offline' });
